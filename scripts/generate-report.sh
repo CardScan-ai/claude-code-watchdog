@@ -30,15 +30,15 @@ cat > .watchdog/final-report.md << EOF
 $([ "$ANALYSIS_FAILED" = "true" ] && echo "- **Status:** ⚠️ Analysis encountered errors - results may be incomplete")
 
 ## Context Summary
-$([ -f ".watchdog/context-summary.json" ] && cat .watchdog/context-summary.json | jq -r 'to_entries | map("- **\(.key | gsub("_"; " ") | ascii_upcase):** \(.value)") | join("\n")' || echo "No context summary available")
+$([ -f ".watchdog/context-summary.json" ] && jq empty .watchdog/context-summary.json 2>/dev/null && cat .watchdog/context-summary.json | jq -r 'to_entries | map("- **\(.key | gsub("_"; " ") | ascii_upcase):** \(.value)") | join("\n")' 2>/dev/null || echo "No context summary available")
 
 ## Failure Analysis
-$([ -f ".watchdog/failure-analysis.json" ] && cat .watchdog/failure-analysis.json | jq -r 'to_entries | map("- **\(.key | gsub("_"; " ") | ascii_upcase):** \(.value)") | join("\n")' || echo "No failure analysis available")
+$([ -f ".watchdog/failure-analysis.json" ] && jq empty .watchdog/failure-analysis.json 2>/dev/null && cat .watchdog/failure-analysis.json | jq -r 'to_entries | map("- **\(.key | gsub("_"; " ") | ascii_upcase):** \(.value)") | join("\n")' 2>/dev/null || echo "No failure analysis available")
 
 ## Available Artifacts
 - Context data: \`.watchdog/\` directory
-- Test files: $([ -f ".watchdog/test-files.txt" ] && wc -l < .watchdog/test-files.txt || echo "0") files found
-- Recent runs: $([ -f ".watchdog/recent-runs.json" ] && jq length .watchdog/recent-runs.json || echo "0") runs analyzed
+- Test files: $([ -f ".watchdog/test-files.txt" ] && wc -l < .watchdog/test-files.txt 2>/dev/null || echo "0") files found
+- Recent runs: $([ -f ".watchdog/recent-runs.json" ] && jq length .watchdog/recent-runs.json 2>/dev/null || echo "0") runs analyzed
 
 EOF
 

@@ -63,28 +63,41 @@ fi
 
 # Gather recent workflow history
 echo "📊 Gathering workflow run history..."
-gh api repos/$GITHUB_REPOSITORY/actions/workflows \
-  --jq ".workflows[] | select(.name == \"$GITHUB_WORKFLOW\") | .id" | head -1 > .watchdog/workflow-id.txt
+if ! gh api repos/$GITHUB_REPOSITORY/actions/workflows \
+  --jq ".workflows[] | select(.name == \"$GITHUB_WORKFLOW\") | .id" | head -1 > .watchdog/workflow-id.txt 2>/dev/null; then
+  echo "⚠️ Could not fetch workflow ID - creating empty workflow data"
+  echo "" > .watchdog/workflow-id.txt
+fi
 
 if [ -s .watchdog/workflow-id.txt ]; then
   WORKFLOW_ID=$(cat .watchdog/workflow-id.txt)
-  gh api repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_ID/runs \
+  if ! gh api repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_ID/runs \
     --jq '.workflow_runs[0:20] | .[] | {id, run_number, status, conclusion, created_at, head_sha, head_commit: {message: .head_commit.message, author: .head_commit.author.name}}' \
-    > .watchdog/recent-runs.json
+    > .watchdog/recent-runs.json 2>/dev/null; then
+    echo "⚠️ Could not fetch workflow runs - using empty list"
+    echo "[]" > .watchdog/recent-runs.json
+  fi
   
-  # Calculate failure statistics
-  TOTAL_RUNS=$(jq length .watchdog/recent-runs.json)
-  FAILED_RUNS=$(jq '[.[] | select(.conclusion == "failure")] | length' .watchdog/recent-runs.json)
-  SUCCESS_RUNS=$(jq '[.[] | select(.conclusion == "success")] | length' .watchdog/recent-runs.json)
+  # Calculate failure statistics with error handling
+  if [ -f ".watchdog/recent-runs.json" ] && jq empty .watchdog/recent-runs.json 2>/dev/null; then
+    TOTAL_RUNS=$(jq length .watchdog/recent-runs.json 2>/dev/null || echo "0")
+    FAILED_RUNS=$(jq '[.[] | select(.conclusion == "failure")] | length' .watchdog/recent-runs.json 2>/dev/null || echo "0")
+    SUCCESS_RUNS=$(jq '[.[] | select(.conclusion == "success")] | length' .watchdog/recent-runs.json 2>/dev/null || echo "0")
+  else
+    echo "⚠️ Invalid JSON in recent-runs.json - using zero values"
+    TOTAL_RUNS=0
+    FAILED_RUNS=0
+    SUCCESS_RUNS=0
+  fi
   
-  # Calculate failure rate
-  if [ "$TOTAL_RUNS" -gt 0 ]; then
+  # Calculate failure rate with safety checks
+  if [ "$TOTAL_RUNS" -gt 0 ] 2>/dev/null; then
     FAILURE_RATE=$(echo "scale=2; $FAILED_RUNS * 100 / $TOTAL_RUNS" | bc -l 2>/dev/null || echo "0")
   else
     FAILURE_RATE="0"
   fi
   
-  # Determine pattern
+  # Determine pattern with safety checks
   if (( $(echo "$FAILURE_RATE > 80" | bc -l 2>/dev/null || echo "0") )); then
     PATTERN="chronic"
   elif (( $(echo "$FAILURE_RATE > 50" | bc -l 2>/dev/null || echo "0") )); then
@@ -146,17 +159,17 @@ cat > .watchdog/context-summary.json << EOF
   "sha": "$GITHUB_SHA",
   "actor": "$GITHUB_ACTOR",
   "event_name": "$GITHUB_EVENT_NAME",
-  "existing_issues_count": $(jq length .watchdog/existing-issues.json),
-  "existing_prs_count": $(jq length .watchdog/existing-prs.json),
-  "recent_failures": $(jq '[.[] | select(.conclusion == "failure")] | length' .watchdog/recent-runs.json),
-  "test_files_found": $(wc -l < .watchdog/test-files.txt | tr -d ' '),
+  "existing_issues_count": $(jq length .watchdog/existing-issues.json 2>/dev/null || echo "0"),
+  "existing_prs_count": $(jq length .watchdog/existing-prs.json 2>/dev/null || echo "0"),
+  "recent_failures": $(jq '[.[] | select(.conclusion == "failure")] | length' .watchdog/recent-runs.json 2>/dev/null || echo "0"),
+  "test_files_found": $(wc -l < .watchdog/test-files.txt 2>/dev/null | tr -d ' ' || echo "0"),
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
 
 echo "✅ Context gathering complete:"
-echo "   - $(jq -r .existing_issues_count .watchdog/context-summary.json) existing issues found"
-echo "   - $(jq -r .existing_prs_count .watchdog/context-summary.json) existing PRs found"  
-echo "   - $(jq -r .recent_failures .watchdog/context-summary.json) recent failures in last 20 runs"
-echo "   - $(jq -r .test_files_found .watchdog/context-summary.json) test output files found"
-echo "   - Failure rate: $(jq -r .failure_rate_percent .watchdog/failure-analysis.json)% ($(jq -r .pattern .watchdog/failure-analysis.json) pattern)"
+echo "   - $(jq -r .existing_issues_count .watchdog/context-summary.json 2>/dev/null || echo "0") existing issues found"
+echo "   - $(jq -r .existing_prs_count .watchdog/context-summary.json 2>/dev/null || echo "0") existing PRs found"  
+echo "   - $(jq -r .recent_failures .watchdog/context-summary.json 2>/dev/null || echo "0") recent failures in last 20 runs"
+echo "   - $(jq -r .test_files_found .watchdog/context-summary.json 2>/dev/null || echo "0") test output files found"
+echo "   - Failure rate: $(jq -r .failure_rate_percent .watchdog/failure-analysis.json 2>/dev/null || echo "0")% ($(jq -r .pattern .watchdog/failure-analysis.json 2>/dev/null || echo "unknown") pattern)"

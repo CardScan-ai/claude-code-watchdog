@@ -30,19 +30,19 @@ inputs:
 outputs:
   severity:
     description: 'Failure severity (ignore|low|medium|high|critical)'
-    value: ${{ steps.watchdog-analysis.outputs.severity }}
+    value: ${{ steps.ensure-outputs.outputs.severity }}
   action_taken:
     description: 'What action was taken (issue_created|issue_updated|pr_created|pr_updated|tests_fixed|none)'
-    value: ${{ steps.watchdog-analysis.outputs.action_taken }}
+    value: ${{ steps.ensure-outputs.outputs.action_taken }}
   issue_number:
     description: 'GitHub issue number if created or updated'
-    value: ${{ steps.watchdog-analysis.outputs.issue_number }}
+    value: ${{ steps.ensure-outputs.outputs.issue_number }}
   pr_number:
     description: 'PR number if fixes were created'
-    value: ${{ steps.watchdog-analysis.outputs.pr_number }}
+    value: ${{ steps.ensure-outputs.outputs.pr_number }}
   tests_passing:
     description: 'true if re-run tests passed after fixes'
-    value: ${{ steps.watchdog-analysis.outputs.tests_passing }}
+    value: ${{ steps.ensure-outputs.outputs.tests_passing }}
 
 runs:
   using: 'composite'
@@ -135,14 +135,16 @@ runs:
 
     - name: Artemis analyzes the situation
       id: watchdog-analysis
-      uses: anthropics/claude-code-action@beta
+      uses: anthropics/claude-code-base-action@beta
       continue-on-error: true  # Don't let Claude errors break the workflow
       env:
         GH_TOKEN: ${{ github.token }}
       with:
         anthropic_api_key: ${{ inputs.anthropic_api_key }}
-        github_token: ${{ github.token }}
-        direct_prompt: |
+        timeout_minutes: 15
+        max_turns: 15
+        allowed_tools: ${{ env.ALLOWED_TOOLS }}
+        prompt: |
           # Test Failure Analysis and Remediation
           
           You are analyzing test failures to help development teams focus on real issues vs. noise.
@@ -210,10 +212,6 @@ runs:
           - Use clear, professional communication in issues and PRs
           
           Begin your analysis now.
-        
-        timeout_minutes: 15
-        max_turns: 15
-        allowed_tools: ${{ env.ALLOWED_TOOLS }}
 
     - name: Generate final report
       shell: bash
@@ -261,33 +259,49 @@ runs:
           *test*.log
         retention-days: 7
 
-    - name: Ensure outputs are set
+    - name: Extract and ensure outputs are set
+      id: ensure-outputs
       shell: bash
       if: always()
       run: |
-        echo "🔧 Ensuring all outputs are properly set..."
+        echo "🔧 Extracting outputs from Claude execution..."
         
-        # Check if outputs exist from Claude analysis, set fallbacks if not
-        if [ -z "${{ steps.watchdog-analysis.outputs.severity }}" ]; then
-          echo "⚠️ No severity output found - setting fallback"
-          echo "severity=unknown" >> $GITHUB_OUTPUT
+        # Initialize default values
+        SEVERITY="unknown"
+        ACTION_TAKEN="analysis_failed"
+        ISSUE_NUMBER=""
+        PR_NUMBER=""
+        TESTS_PASSING=""
+        
+        # Check if Claude execution succeeded and extract outputs
+        if [ "${{ steps.watchdog-analysis.outputs.conclusion }}" = "success" ] && [ -f "${{ steps.watchdog-analysis.outputs.execution_file }}" ]; then
+          echo "📄 Parsing Claude execution log..."
+          
+          # Extract outputs from execution log using jq
+          if command -v jq >/dev/null 2>&1; then
+            # Look for GitHub Action outputs in the execution log
+            SEVERITY=$(jq -r '.[] | select(.role == "assistant") | .content | capture("severity=(?<severity>[a-z]+)") | .severity' "${{ steps.watchdog-analysis.outputs.execution_file }}" 2>/dev/null | tail -1 || echo "unknown")
+            ACTION_TAKEN=$(jq -r '.[] | select(.role == "assistant") | .content | capture("action_taken=(?<action>[a-z_]+)") | .action' "${{ steps.watchdog-analysis.outputs.execution_file }}" 2>/dev/null | tail -1 || echo "none")
+            ISSUE_NUMBER=$(jq -r '.[] | select(.role == "assistant") | .content | capture("issue_number=(?<issue>[0-9]+)") | .issue' "${{ steps.watchdog-analysis.outputs.execution_file }}" 2>/dev/null | tail -1 || echo "")
+            PR_NUMBER=$(jq -r '.[] | select(.role == "assistant") | .content | capture("pr_number=(?<pr>[0-9]+)") | .pr' "${{ steps.watchdog-analysis.outputs.execution_file }}" 2>/dev/null | tail -1 || echo "")
+            TESTS_PASSING=$(jq -r '.[] | select(.role == "assistant") | .content | capture("tests_passing=(?<tests>[a-z]+)") | .tests' "${{ steps.watchdog-analysis.outputs.execution_file }}" 2>/dev/null | tail -1 || echo "")
+          fi
+          
+          # Clean up empty values
+          [ "$SEVERITY" = "" ] && SEVERITY="unknown"
+          [ "$ACTION_TAKEN" = "" ] && ACTION_TAKEN="none"
         else
-          echo "severity=${{ steps.watchdog-analysis.outputs.severity }}" >> $GITHUB_OUTPUT
+          echo "⚠️ Claude analysis failed or no execution file - using fallback values"
         fi
         
-        if [ -z "${{ steps.watchdog-analysis.outputs.action_taken }}" ]; then
-          echo "⚠️ No action_taken output found - setting fallback"
-          echo "action_taken=analysis_failed" >> $GITHUB_OUTPUT
-        else
-          echo "action_taken=${{ steps.watchdog-analysis.outputs.action_taken }}" >> $GITHUB_OUTPUT
-        fi
+        # Set outputs
+        echo "severity=$SEVERITY" >> $GITHUB_OUTPUT
+        echo "action_taken=$ACTION_TAKEN" >> $GITHUB_OUTPUT
+        echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+        echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+        echo "tests_passing=$TESTS_PASSING" >> $GITHUB_OUTPUT
         
-        # Optional outputs (can be empty)
-        echo "issue_number=${{ steps.watchdog-analysis.outputs.issue_number }}" >> $GITHUB_OUTPUT
-        echo "pr_number=${{ steps.watchdog-analysis.outputs.pr_number }}" >> $GITHUB_OUTPUT
-        echo "tests_passing=${{ steps.watchdog-analysis.outputs.tests_passing }}" >> $GITHUB_OUTPUT
-        
-        echo "✅ All outputs verified and set"
+        echo "✅ Outputs set: severity=$SEVERITY, action_taken=$ACTION_TAKEN"
 
 branding:
   icon: 'eye'
