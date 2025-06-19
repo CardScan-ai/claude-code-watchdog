@@ -41,24 +41,39 @@ EOF
   exit 0
 fi
 
-# Gather existing issues/PRs with error handling
-echo "📋 Gathering existing issues and PRs..."
-WORKFLOW_PATTERN="Watchdog \\\\[${GITHUB_WORKFLOW:-unknown}\\\\]"
-
-# Find related open issues
-if ! gh api repos/$GITHUB_REPOSITORY/issues \
-  --jq ".[] | select(.title | test(\"$WORKFLOW_PATTERN\")) | select(.state == \"open\") | {number, title, created_at, updated_at, labels: [.labels[].name], body}" \
-  > .watchdog/existing-issues.json 2>/dev/null; then
-  echo "⚠️ Could not fetch existing issues - using empty list"
+# Check if safe mode is enabled
+if [ "${SAFE_MODE:-false}" = "true" ]; then
+  echo "🔒 Safe mode enabled - skipping external content (issues, PRs, commits)"
   echo "[]" > .watchdog/existing-issues.json
+  echo "[]" > .watchdog/existing-prs.json
+  echo "[]" > .watchdog/recent-commits.json
+  
+  # Still gather workflow runs (internal data) and skip to the end
+  echo "📊 Gathering workflow run history (safe mode only)..."
+  SKIP_EXTERNAL_DATA=true
+else
+  echo "📋 Gathering existing issues and PRs..."
+  SKIP_EXTERNAL_DATA=false
 fi
 
-# Find related open PRs  
-if ! gh api repos/$GITHUB_REPOSITORY/pulls \
-  --jq ".[] | select(.title | test(\"$WORKFLOW_PATTERN\")) | select(.state == \"open\") | {number, title, created_at, updated_at, head: .head.ref, body}" \
-  > .watchdog/existing-prs.json 2>/dev/null; then
-  echo "⚠️ Could not fetch existing PRs - using empty list"
-  echo "[]" > .watchdog/existing-prs.json
+WORKFLOW_PATTERN="Watchdog \\\\[${GITHUB_WORKFLOW:-unknown}\\\\]"
+
+# Find related open issues (unless in safe mode)
+if [ "$SKIP_EXTERNAL_DATA" = "false" ]; then
+  if ! gh api repos/$GITHUB_REPOSITORY/issues \
+    --jq ".[] | select(.title | test(\"$WORKFLOW_PATTERN\")) | select(.state == \"open\") | {number, title, created_at, updated_at, labels: [.labels[].name], body}" \
+    > .watchdog/existing-issues.json 2>/dev/null; then
+    echo "⚠️ Could not fetch existing issues - using empty list"
+    echo "[]" > .watchdog/existing-issues.json
+  fi
+
+  # Find related open PRs  
+  if ! gh api repos/$GITHUB_REPOSITORY/pulls \
+    --jq ".[] | select(.title | test(\"$WORKFLOW_PATTERN\")) | select(.state == \"open\") | {number, title, created_at, updated_at, head: .head.ref, body}" \
+    > .watchdog/existing-prs.json 2>/dev/null; then
+    echo "⚠️ Could not fetch existing PRs - using empty list"
+    echo "[]" > .watchdog/existing-prs.json
+  fi
 fi
 
 # Gather recent workflow history
@@ -128,16 +143,18 @@ else
 EOF
 fi
 
-# Gather recent commits (potential causes)
-echo "📝 Gathering recent commits..."
-if ! gh api repos/$GITHUB_REPOSITORY/commits \
-  --jq '.[] | {sha: .sha[0:8], message: .commit.message, author: .commit.author.name, date: .commit.author.date}' \
-  > .watchdog/recent-commits.json 2>/dev/null; then
-  echo "⚠️ Could not fetch recent commits - using empty list"
-  echo "[]" > .watchdog/recent-commits.json
+# Gather recent commits (potential causes) - skip in safe mode
+if [ "$SKIP_EXTERNAL_DATA" = "false" ]; then
+  echo "📝 Gathering recent commits..."
+  if ! gh api repos/$GITHUB_REPOSITORY/commits \
+    --jq '.[] | {sha: .sha[0:8], message: .commit.message, author: .commit.author.name, date: .commit.author.date}' \
+    > .watchdog/recent-commits.json 2>/dev/null; then
+    echo "⚠️ Could not fetch recent commits - using empty list"
+    echo "[]" > .watchdog/recent-commits.json
+  fi
 fi
 
-# Find and catalog test output files
+# Find and read test output files (exclude .git and node_modules)
 echo "🔍 Finding test output files..."
 find . -type f \( \
   -name "*.xml" -o \
@@ -145,7 +162,21 @@ find . -type f \( \
   -name "*.log" -o \
   -name "*.tap" -o \
   -name "*.trx" \
-\) | grep -E "(test|spec|junit|report|result)" | head -50 > .watchdog/test-files.txt
+\) -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./.watchdog/*" \
+| grep -E "(test|spec|junit|report|result)" | head -10 > .watchdog/test-files.txt
+
+# Read actual test output content (limited to avoid token waste)
+echo "📄 Reading test output content..."
+mkdir -p .watchdog/test-outputs
+TEST_COUNT=0
+while IFS= read -r file && [ $TEST_COUNT -lt 5 ]; do
+  if [ -f "$file" ] && [ -s "$file" ]; then
+    echo "Reading: $file"
+    # Copy file with size limit to avoid massive files
+    head -100 "$file" > ".watchdog/test-outputs/$(basename "$file")"
+    TEST_COUNT=$((TEST_COUNT + 1))
+  fi
+done < .watchdog/test-files.txt
 
 # Create context summary
 echo "📄 Creating context summary..."

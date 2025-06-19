@@ -52,6 +52,7 @@ jobs:
         rerun_tests: 'false'  # Don't rerun for demo
         severity_threshold: 'low'
         debug_mode: 'true'
+        safe_mode: 'true'  # Enable safe mode for demo
     
     - name: Demo results summary
       if: always()

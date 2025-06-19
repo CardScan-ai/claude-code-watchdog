@@ -26,6 +26,10 @@ inputs:
     description: 'Upload watchdog artifacts for debugging'
     required: false
     default: 'false'
+  safe_mode:
+    description: 'Skip potentially risky external content (GitHub issues, PRs, commit messages)'
+    required: false
+    default: 'false'
 
 outputs:
   severity:
@@ -73,6 +77,7 @@ runs:
       continue-on-error: true  # Don't fail if context gathering has issues
       env:
         GH_TOKEN: ${{ github.token }}
+        SAFE_MODE: ${{ inputs.safe_mode }}
         GITHUB_WORKFLOW: ${{ github.workflow }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_RUN_ID: ${{ github.run_id }}
@@ -85,48 +90,18 @@ runs:
     - name: Prepare allowed tools
       shell: bash
       run: |
-        # Base tools (always available)
-        TOOLS="Bash(find . -name \"*.xml\" -o -name \"*.json\" -o -name \"*.log\")
-        Bash(gh api repos/${{ github.repository }}/actions/workflows)
-        Bash(gh api repos/${{ github.repository }}/issues)
-        Bash(gh api repos/${{ github.repository }}/pulls)
-        Bash(gh api repos/${{ github.repository }}/commits)
-        Bash(cat)
-        Bash(grep)
-        Bash(jq)
-        Bash(date)
-        Bash(wc)
-        Bash(tail)
-        Bash(head)
-        Bash(echo)
-        Bash(test)"
+        # Base tools for GitHub Actions integration
+        TOOLS="Bash
+        Read
+        Glob
+        Grep"
         
         # Add file editing tools if fixes enabled
         if [ "${{ inputs.create_fixes }}" == "true" ]; then
           TOOLS="$TOOLS
         Edit
-        Replace
-        CreateFile
-        Bash(git)"
-        fi
-        
-        # Add test runners if rerun enabled
-        if [ "${{ inputs.rerun_tests }}" == "true" ]; then
-          TOOLS="$TOOLS
-        Bash(npm)
-        Bash(yarn)
-        Bash(mvn)
-        Bash(gradle)
-        Bash(./gradlew)
-        Bash(pytest)
-        Bash(python)
-        Bash(node)
-        Bash(java)
-        Bash(dotnet)
-        Bash(go test)
-        Bash(cargo test)
-        Bash(php)
-        Bash(composer)"
+        MultiEdit
+        Write"
         fi
         
         echo "ALLOWED_TOOLS<<EOF" >> $GITHUB_ENV
@@ -144,6 +119,7 @@ runs:
         CREATE_FIXES: ${{ inputs.create_fixes }}
         RERUN_TESTS: ${{ inputs.rerun_tests }}
         SEVERITY_THRESHOLD: ${{ inputs.severity_threshold }}
+        SAFE_MODE: ${{ inputs.safe_mode }}
         GITHUB_WORKFLOW: ${{ github.workflow }}
 
     - name: Artemis analyzes the situation
@@ -157,7 +133,8 @@ runs:
         timeout_minutes: 10
         max_turns: 8
         allowed_tools: ${{ env.ALLOWED_TOOLS }}
-        prompt_file: .watchdog/claude-prompt.md
+        system_prompt_file: ${{ github.action_path }}/scripts/system-prompt.md
+        prompt_file: .watchdog/context-data.md
 
     - name: Generate final report
       shell: bash
@@ -199,11 +176,8 @@ runs:
         name: watchdog-debug-${{ github.run_id }}
         path: |
           .watchdog/
-          test-results*
-          *test*.xml
-          *test*.json
-          *test*.log
         retention-days: 7
+        if-no-files-found: warn
 
     - name: Extract and ensure outputs are set
       id: ensure-outputs
