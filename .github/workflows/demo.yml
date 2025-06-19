@@ -34,7 +34,6 @@ jobs:
         cd demo
         npm install
         npm test
-      continue-on-error: true
     
     - name: Force failure for demo (if requested)
       if: inputs.force_failure == true
@@ -45,6 +44,7 @@ jobs:
     - name: Claude Code Watchdog Analysis
       if: failure()
       id: watchdog
+      continue-on-error: true  # Don't let watchdog errors break the demo summary
       uses: ./  # Use the local action
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
