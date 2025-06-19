@@ -1,0 +1,12 @@
+{
+  "name": "flaky-demo-app",
+  "version": "1.0.0",
+  "description": "Flaky Node.js app for testing Claude Code Watchdog",
+  "main": "app.js",
+  "scripts": {
+    "test": "node test.js",
+    "start": "node app.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

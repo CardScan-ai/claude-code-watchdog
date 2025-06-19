@@ -1,0 +1,289 @@
+name: 'Claude Code Watchdog'
+description: 'Your AI watchdog that watches for test failures and heals them automatically'
+author: 'CardScan.ai'
+
+inputs:
+  anthropic_api_key:
+    description: 'Anthropic API key for Claude'
+    required: true
+  severity_threshold:
+    description: 'Minimum severity to process (ignore|low|medium|high|critical)'
+    required: false
+    default: 'medium'
+  create_issues:
+    description: 'Create GitHub issues for failures'
+    required: false
+    default: 'true'
+  create_fixes:
+    description: 'Attempt to implement fixes automatically'
+    required: false
+    default: 'true'
+  rerun_tests:
+    description: 'Attempt to re-run failed tests to confirm fixes'
+    required: false
+    default: 'false'
+  debug_mode:
+    description: 'Upload watchdog artifacts for debugging'
+    required: false
+    default: 'false'
+
+outputs:
+  severity:
+    description: 'Failure severity (ignore|low|medium|high|critical)'
+    value: ${{ steps.watchdog-analysis.outputs.severity }}
+  action_taken:
+    description: 'What action was taken (issue_created|issue_updated|pr_created|pr_updated|tests_fixed|none)'
+    value: ${{ steps.watchdog-analysis.outputs.action_taken }}
+  issue_number:
+    description: 'GitHub issue number if created or updated'
+    value: ${{ steps.watchdog-analysis.outputs.issue_number }}
+  pr_number:
+    description: 'PR number if fixes were created'
+    value: ${{ steps.watchdog-analysis.outputs.pr_number }}
+  tests_passing:
+    description: 'true if re-run tests passed after fixes'
+    value: ${{ steps.watchdog-analysis.outputs.tests_passing }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🐕 Artemis is on the case
+      shell: bash
+      run: |
+        echo "🐕 Woof! Artemis the Watchdog detected test failures..."
+        echo "🔍 Starting intelligent failure analysis..."
+
+    - name: Validation checks
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/scripts/validate.sh
+        ${{ github.action_path }}/scripts/validate.sh
+      continue-on-error: false  # Only fail on missing API key
+      env:
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        CREATE_FIXES: ${{ inputs.create_fixes }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+
+    - name: Gather context data
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/scripts/preflight.sh
+        ${{ github.action_path }}/scripts/preflight.sh
+      continue-on-error: true  # Don't fail if context gathering has issues
+      env:
+        GITHUB_WORKFLOW: ${{ github.workflow }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        GITHUB_REF: ${{ github.ref }}
+        GITHUB_SHA: ${{ github.sha }}
+        GITHUB_ACTOR: ${{ github.actor }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+
+    - name: Prepare allowed tools
+      shell: bash
+      run: |
+        # Base tools (always available)
+        TOOLS="Bash(find . -name \"*.xml\" -o -name \"*.json\" -o -name \"*.log\")
+        Bash(gh api repos/${{ github.repository }}/actions/workflows)
+        Bash(gh api repos/${{ github.repository }}/issues)
+        Bash(gh api repos/${{ github.repository }}/pulls)
+        Bash(gh api repos/${{ github.repository }}/commits)
+        Bash(cat)
+        Bash(grep)
+        Bash(jq)
+        Bash(date)
+        Bash(wc)
+        Bash(tail)
+        Bash(head)
+        Bash(echo)
+        Bash(test)"
+        
+        # Add file editing tools if fixes enabled
+        if [ "${{ inputs.create_fixes }}" == "true" ]; then
+          TOOLS="$TOOLS
+        Edit
+        Replace
+        CreateFile
+        Bash(git)"
+        fi
+        
+        # Add test runners if rerun enabled
+        if [ "${{ inputs.rerun_tests }}" == "true" ]; then
+          TOOLS="$TOOLS
+        Bash(npm)
+        Bash(yarn)
+        Bash(mvn)
+        Bash(gradle)
+        Bash(./gradlew)
+        Bash(pytest)
+        Bash(python)
+        Bash(node)
+        Bash(java)
+        Bash(dotnet)
+        Bash(go test)
+        Bash(cargo test)
+        Bash(php)
+        Bash(composer)"
+        fi
+        
+        echo "ALLOWED_TOOLS<<EOF" >> $GITHUB_ENV
+        echo "$TOOLS" >> $GITHUB_ENV
+        echo "EOF" >> $GITHUB_ENV
+
+    - name: Artemis analyzes the situation
+      id: watchdog-analysis
+      uses: anthropics/claude-code-action@beta
+      continue-on-error: true  # Don't let Claude errors break the workflow
+      with:
+        anthropic_api_key: ${{ inputs.anthropic_api_key }}
+        direct_prompt: |
+          # Test Failure Analysis and Remediation
+          
+          You are analyzing test failures to help development teams focus on real issues vs. noise.
+          
+          ## Configuration
+          - Create issues: ${{ inputs.create_issues }}
+          - Create fixes: ${{ inputs.create_fixes }}
+          - Rerun tests: ${{ inputs.rerun_tests }}
+          - Severity threshold: ${{ inputs.severity_threshold }}
+          
+          ## Available Context Data
+          Pre-gathered data is available in these files:
+          - `.watchdog/context-summary.json` - Workflow and run information
+          - `.watchdog/permissions.json` - Available GitHub permissions
+          - `.watchdog/existing-issues.json` - Related open issues  
+          - `.watchdog/existing-prs.json` - Related open PRs
+          - `.watchdog/recent-runs.json` - Recent workflow run history
+          - `.watchdog/recent-commits.json` - Recent commits (potential causes)
+          - `.watchdog/failure-analysis.json` - Failure rate and pattern analysis
+          - `.watchdog/test-files.txt` - Available test output files
+          
+          ## Your Tasks
+          
+          1. **Analyze the Test Failures**
+             - Parse test output files to understand what failed and why
+             - Identify error types (timeouts, assertions, network, etc.)
+             - Look for patterns in the failure messages
+          
+          2. **Assess Severity Based on Context**
+             - Use failure rate from `.watchdog/failure-analysis.json`
+             - Chronic (80%+): Upgrade severity by 1-2 levels
+             - Frequent (50-79%): Upgrade severity by 1 level  
+             - Intermittent (20-49%): Use base severity
+             - Isolated (<20%): Consider downgrading unless critical
+          
+          3. **Manage Issues Intelligently**
+             - Check existing issues to avoid duplicates
+             - Update existing issues rather than creating new ones
+             - Use consistent naming: "Watchdog [${{ github.workflow }}]: [description]"
+             - Include failure patterns, recommendations, and context
+          
+          4. **Implement Fixes (if enabled and appropriate)**
+             - Only make changes you're confident about
+             - Common fixes: timeouts, retries, selectors, deprecated APIs
+             - Create PRs with clear descriptions of changes made
+             - Check for existing fix PRs first
+          
+          5. **Test Verification (if enabled)**
+             - Re-run tests after applying fixes to verify they work
+             - Set appropriate output values based on results
+          
+          ## Required Outputs
+          Always set these GitHub Action outputs:
+          - `severity`: ignore|low|medium|high|critical
+          - `action_taken`: issue_created|issue_updated|pr_created|pr_updated|tests_fixed|none
+          - `issue_number`: If an issue was created or updated
+          - `pr_number`: If a PR was created or updated
+          - `tests_passing`: true|false|unknown (if rerun_tests enabled)
+          
+          ## Guidelines
+          - Be intelligent about severity - use failure patterns, not just error content
+          - Avoid creating noise - update existing issues when appropriate  
+          - Provide actionable recommendations in issues
+          - Only implement fixes you're confident will help
+          - Use clear, professional communication in issues and PRs
+          
+          Begin your analysis now.
+        
+        timeout_minutes: 15
+        max_turns: 15
+        allowed_tools: ${{ env.ALLOWED_TOOLS }}
+
+    - name: Generate final report
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/scripts/generate-report.sh
+        ${{ github.action_path }}/scripts/generate-report.sh
+      continue-on-error: true  # Always try to generate a report, even if incomplete
+      env:
+        SEVERITY: ${{ steps.watchdog-analysis.outputs.severity }}
+        ACTION_TAKEN: ${{ steps.watchdog-analysis.outputs.action_taken }}
+        ISSUE_NUMBER: ${{ steps.watchdog-analysis.outputs.issue_number }}
+        PR_NUMBER: ${{ steps.watchdog-analysis.outputs.pr_number }}
+        TESTS_PASSING: ${{ steps.watchdog-analysis.outputs.tests_passing }}
+        INPUT_TOKENS: ${{ steps.watchdog-analysis.outputs.input_tokens }}
+        OUTPUT_TOKENS: ${{ steps.watchdog-analysis.outputs.output_tokens }}
+        CACHE_READ_TOKENS: ${{ steps.watchdog-analysis.outputs.cache_read_tokens }}
+        CACHE_WRITE_TOKENS: ${{ steps.watchdog-analysis.outputs.cache_write_tokens }}
+        TOTAL_COST: ${{ steps.watchdog-analysis.outputs.total_cost }}
+        TURNS_USED: ${{ steps.watchdog-analysis.outputs.turns_used }}
+        CREATE_FIXES: ${{ inputs.create_fixes }}
+        RERUN_TESTS: ${{ inputs.rerun_tests }}
+        GITHUB_WORKFLOW: ${{ github.workflow }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_SERVER_URL: ${{ github.server_url }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+
+    - name: Upload analysis report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: watchdog-report-${{ github.run_id }}
+        path: .watchdog/final-report.md
+        retention-days: 30
+
+    - name: Upload debug artifacts
+      uses: actions/upload-artifact@v4
+      if: always() && inputs.debug_mode == 'true'
+      with:
+        name: watchdog-debug-${{ github.run_id }}
+        path: |
+          .watchdog/
+          test-results*
+          *test*.xml
+          *test*.json
+          *test*.log
+        retention-days: 7
+
+    - name: Ensure outputs are set
+      shell: bash
+      if: always()
+      run: |
+        echo "🔧 Ensuring all outputs are properly set..."
+        
+        # Check if outputs exist from Claude analysis, set fallbacks if not
+        if [ -z "${{ steps.watchdog-analysis.outputs.severity }}" ]; then
+          echo "⚠️ No severity output found - setting fallback"
+          echo "severity=unknown" >> $GITHUB_OUTPUT
+        else
+          echo "severity=${{ steps.watchdog-analysis.outputs.severity }}" >> $GITHUB_OUTPUT
+        fi
+        
+        if [ -z "${{ steps.watchdog-analysis.outputs.action_taken }}" ]; then
+          echo "⚠️ No action_taken output found - setting fallback"
+          echo "action_taken=analysis_failed" >> $GITHUB_OUTPUT
+        else
+          echo "action_taken=${{ steps.watchdog-analysis.outputs.action_taken }}" >> $GITHUB_OUTPUT
+        fi
+        
+        # Optional outputs (can be empty)
+        echo "issue_number=${{ steps.watchdog-analysis.outputs.issue_number }}" >> $GITHUB_OUTPUT
+        echo "pr_number=${{ steps.watchdog-analysis.outputs.pr_number }}" >> $GITHUB_OUTPUT
+        echo "tests_passing=${{ steps.watchdog-analysis.outputs.tests_passing }}" >> $GITHUB_OUTPUT
+        
+        echo "✅ All outputs verified and set"
+
+branding:
+  icon: 'eye'
+  color: 'blue'

@@ -1,0 +1,77 @@
+name: Monthly Demo
+
+on:
+  schedule:
+    # Run on the 1st, 2nd, and 3rd day of each month at 9 AM UTC
+    - cron: '0 9 1-3 * *'
+  workflow_dispatch:
+    inputs:
+      force_failure:
+        description: 'Force test failure for demo'
+        type: boolean
+        default: false
+
+jobs:
+  flaky-demo-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # For creating fix PRs
+      issues: write        # For creating issues
+      pull-requests: write # For creating PRs
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+    
+    - name: Run flaky demo test
+      id: demo-test
+      run: |
+        cd demo
+        npm install
+        npm test
+      continue-on-error: true
+    
+    - name: Force failure for demo (if requested)
+      if: inputs.force_failure == true
+      run: |
+        echo "Simulating test failure for demonstration"
+        exit 1
+    
+    - name: Claude Code Watchdog Analysis
+      if: failure()
+      id: watchdog
+      uses: ./  # Use the local action
+      with:
+        anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        create_fixes: 'true'
+        rerun_tests: 'false'  # Don't rerun for demo
+        severity_threshold: 'low'
+        debug_mode: 'true'
+    
+    - name: Demo results summary
+      if: always()
+      run: |
+        echo "🎭 Demo Run Complete!"
+        echo "Test Status: ${{ steps.demo-test.outcome }}"
+        
+        if [ "${{ steps.demo-test.outcome }}" = "failure" ]; then
+          echo "Watchdog Analysis:"
+          echo "  - Severity: ${{ steps.watchdog.outputs.severity }}"
+          echo "  - Action taken: ${{ steps.watchdog.outputs.action_taken }}"
+          echo "  - Issue number: ${{ steps.watchdog.outputs.issue_number }}"
+          echo "  - PR number: ${{ steps.watchdog.outputs.pr_number }}"
+          echo "  - Tests passing: ${{ steps.watchdog.outputs.tests_passing }}"
+        else
+          echo "✅ Tests passed - no watchdog analysis needed"
+        fi
+        
+        echo ""
+        echo "🔍 Check the Actions tab for:"
+        echo "  - Analysis report artifacts"
+        echo "  - Debug data (if failure occurred)"
+        echo "  - Any issues or PRs created by Artemis"
