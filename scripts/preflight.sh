@@ -178,6 +178,56 @@ while IFS= read -r file && [ $TEST_COUNT -lt 5 ]; do
   fi
 done < .watchdog/test-files.txt
 
+# Gather test results from specified path
+echo "📊 Gathering test results..."
+mkdir -p .watchdog/test-outputs
+
+if [ -n "${TEST_RESULTS_PATH:-}" ]; then
+  echo "🔍 Looking for test results at: $TEST_RESULTS_PATH"
+  
+  # Use find with glob patterns to locate test result files
+  # Support both direct paths and glob patterns
+  FOUND_FILES=0
+  
+  # Try to expand the glob pattern
+  for file_pattern in $TEST_RESULTS_PATH; do
+    # Use find to handle glob patterns properly
+    if [ -f "$file_pattern" ]; then
+      # Direct file path
+      echo "📄 Found test result file: $file_pattern"
+      # Copy with a safe filename (replace / with _)
+      SAFE_NAME=$(echo "$file_pattern" | sed 's|/|_|g' | sed 's|^_||')
+      cp "$file_pattern" ".watchdog/test-outputs/$SAFE_NAME" 2>/dev/null || {
+        echo "⚠️ Could not copy $file_pattern"
+      }
+      FOUND_FILES=$((FOUND_FILES + 1))
+    elif [ -d "$(dirname "$file_pattern")" ]; then
+      # Try to find files matching the pattern
+      find "$(dirname "$file_pattern")" -name "$(basename "$file_pattern")" -type f 2>/dev/null | while read -r found_file; do
+        if [ -f "$found_file" ]; then
+          echo "📄 Found test result file: $found_file"
+          # Copy with a safe filename (replace / with _)  
+          SAFE_NAME=$(echo "$found_file" | sed 's|/|_|g' | sed 's|^_||')
+          cp "$found_file" ".watchdog/test-outputs/$SAFE_NAME" 2>/dev/null || {
+            echo "⚠️ Could not copy $found_file"
+          }
+          FOUND_FILES=$((FOUND_FILES + 1))
+        fi
+      done
+    fi
+  done
+  
+  if [ "$FOUND_FILES" -eq 0 ]; then
+    echo "⚠️ No test result files found at pattern: $TEST_RESULTS_PATH"
+    echo "📁 Available files in current directory:"
+    find . -name "*.xml" -o -name "*.json" -o -name "*.log" -o -name "*test*" -o -name "*result*" | head -10 || echo "   No common test files found"
+  else
+    echo "✅ Found $FOUND_FILES test result files"
+  fi
+else
+  echo "⚠️ No test results path specified"
+fi
+
 # Create context summary
 echo "📄 Creating context summary..."
 cat > .watchdog/context-summary.json << EOF
@@ -194,6 +244,7 @@ cat > .watchdog/context-summary.json << EOF
   "existing_prs_count": $(jq length .watchdog/existing-prs.json 2>/dev/null || echo "0"),
   "recent_failures": $(jq '[.[] | select(.conclusion == "failure")] | length' .watchdog/recent-runs.json 2>/dev/null || echo "0"),
   "test_files_found": $(wc -l < .watchdog/test-files.txt 2>/dev/null | tr -d ' ' || echo "0"),
+  "test_results_files": $(find .watchdog/test-outputs -type f 2>/dev/null | wc -l | tr -d ' ' || echo "0"),
   "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
@@ -202,5 +253,6 @@ echo "✅ Context gathering complete:"
 echo "   - $(jq -r .existing_issues_count .watchdog/context-summary.json 2>/dev/null || echo "0") existing issues found"
 echo "   - $(jq -r .existing_prs_count .watchdog/context-summary.json 2>/dev/null || echo "0") existing PRs found"  
 echo "   - $(jq -r .recent_failures .watchdog/context-summary.json 2>/dev/null || echo "0") recent failures in last 20 runs"
-echo "   - $(jq -r .test_files_found .watchdog/context-summary.json 2>/dev/null || echo "0") test output files found"
+echo "   - $(jq -r .test_files_found .watchdog/context-summary.json 2>/dev/null || echo "0") test files found"
+echo "   - $(jq -r .test_results_files .watchdog/context-summary.json 2>/dev/null || echo "0") test result files collected"
 echo "   - Failure rate: $(jq -r .failure_rate_percent .watchdog/failure-analysis.json 2>/dev/null || echo "0")% ($(jq -r .pattern .watchdog/failure-analysis.json 2>/dev/null || echo "unknown") pattern)"

@@ -30,6 +30,9 @@ inputs:
     description: 'Skip potentially risky external content (GitHub issues, PRs, commit messages)'
     required: false
     default: 'false'
+  test_results_path:
+    description: 'Path or glob pattern to test result files (e.g., "test-results/**/*.xml", "cypress/reports/*.json")'
+    required: true
 
 outputs:
   severity:
@@ -78,6 +81,7 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         SAFE_MODE: ${{ inputs.safe_mode }}
+        TEST_RESULTS_PATH: ${{ inputs.test_results_path }}
         GITHUB_WORKFLOW: ${{ github.workflow }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_RUN_ID: ${{ github.run_id }}
@@ -118,8 +122,7 @@ runs:
     - name: Prepare enhanced prompt
       shell: bash
       run: |
-        chmod +x ${{ github.action_path }}/scripts/prepare-prompt.sh
-        ${{ github.action_path }}/scripts/prepare-prompt.sh
+        node ${{ github.action_path }}/scripts/prepare-prompt.js
       continue-on-error: false  # Prompt preparation should not fail
       env:
         CREATE_ISSUES: ${{ inputs.create_issues }}

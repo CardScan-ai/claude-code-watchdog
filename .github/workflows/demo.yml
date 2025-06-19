@@ -33,7 +33,30 @@ jobs:
       run: |
         cd demo
         npm install
-        npm test
+        # Create test results directory
+        mkdir -p test-results
+        # Run tests and capture output
+        npm test 2>&1 | tee test-results/npm-test-output.log || true
+        # Also create a fake JUnit XML for testing
+        cat > test-results/junit.xml << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Demo Tests" tests="3" failures="1" errors="0" time="2.5">
+  <testsuite name="Math Operations" tests="2" failures="0" errors="0" time="1.2">
+    <testcase name="should add numbers correctly" time="0.5"/>
+    <testcase name="should multiply numbers correctly" time="0.7"/>
+  </testsuite>
+  <testsuite name="String Operations" tests="1" failures="1" errors="0" time="1.3">
+    <testcase name="should concatenate strings" time="1.3">
+      <failure message="AssertionError: expected 'helloworld' to equal 'hello world'">
+        Expected: "hello world"
+        Received: "helloworld"
+      </failure>
+    </testcase>
+  </testsuite>
+</testsuites>
+EOF
+        # Exit with failure to trigger watchdog
+        exit 1
     
     - name: Force failure for demo (if requested)
       if: inputs.force_failure == true
@@ -48,6 +71,7 @@ jobs:
       uses: ./  # Use the local action
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        test_results_path: 'demo/test-results/*'
         create_fixes: 'true'
         rerun_tests: 'false'  # Don't rerun for demo
         severity_threshold: 'low'
