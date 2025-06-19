@@ -5,14 +5,14 @@ set -u  # Error on undefined variables
 echo "📝 Preparing context data for Claude analysis..."
 
 # Create context data file (separate from system prompt for security)
-cat > .watchdog/context-data.md << 'CONTEXT_EOF'
+cat > .watchdog/context-data.md << CONTEXT_EOF
 # Test Failure Analysis Context
 
 ## Configuration
-- Create issues: ${CREATE_ISSUES}
-- Create fixes: ${CREATE_FIXES}
-- Rerun tests: ${RERUN_TESTS}
-- Severity threshold: ${SEVERITY_THRESHOLD}
+- Create issues: ${CREATE_ISSUES:-unknown}
+- Create fixes: ${CREATE_FIXES:-unknown}
+- Rerun tests: ${RERUN_TESTS:-unknown}
+- Severity threshold: ${SEVERITY_THRESHOLD:-unknown}
 - Safe mode: ${SAFE_MODE:-false}
 
 ## Context Data
