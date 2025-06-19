@@ -243,8 +243,9 @@ The action gracefully falls back to analysis-only mode if permissions aren't ava
 
 ### 1. Get Your Anthropic API Key
 1. Sign up at [console.anthropic.com](https://console.anthropic.com)
-2. Create an API key
-3. Add it to your repository secrets as `ANTHROPIC_API_KEY`
+2. **IMPORTANT**: Set up spending limits and budget alerts for your account
+3. Create an API key with appropriate usage limits
+4. Add it to your repository secrets as `ANTHROPIC_API_KEY`
 
 ### 2. Add Repository Secrets
 Go to your repository → Settings → Secrets and variables → Actions:
@@ -424,7 +425,11 @@ Perfect for:
 
 ## Cost Estimation
 
-Claude Code Watchdog uses the Anthropic API, so each run incurs a small cost based on token usage.
+> ⚠️ **IMPORTANT DISCLAIMER**: Cost estimates are approximate and may vary significantly based on your specific use case, test output size, and complexity. CardScan.ai provides NO warranty or guarantee regarding actual costs incurred. Usage costs are your responsibility.
+>
+> 🚨 **STRONGLY RECOMMENDED**: Set up API key spending limits and budgets you are comfortable with before using this action. Monitor your Anthropic API usage regularly.
+
+Claude Code Watchdog uses the Anthropic API, so each run incurs a cost based on token usage.
 
 ### Typical Costs Per Run
 
@@ -452,17 +457,23 @@ Claude Code Watchdog uses the Anthropic API, so each run incurs a small cost bas
 
 1. **Start conservative**: Use `create_fixes: false` initially
 2. **Limit scope**: Use `severity_threshold` to avoid low-priority runs
-3. **Monitor usage**: Check cost estimates in analysis reports
-4. **Scheduled wisely**: Monthly demos instead of daily
+3. **Monitor usage**: Check cost estimates in analysis reports and your Anthropic dashboard
+4. **Schedule wisely**: Monthly demos instead of daily
 5. **Debug selectively**: Only enable `debug_mode` when needed
+6. **Set spending limits**: Configure budget alerts in your Anthropic account
+7. **Test cautiously**: Start with non-critical workflows to understand actual costs
 
 ### Monthly Budget Examples
+
+> ⚠️ **These are rough estimates only - your actual costs may be significantly higher or lower**
 
 - **Light usage** (5 failures/month, analysis only): ~$2-3/month
 - **Regular usage** (15 failures/month, fixes enabled): ~$8-12/month  
 - **Heavy usage** (30 failures/month, full automation): ~$20-30/month
 
-The action always shows estimated costs in the console output and detailed breakdown in analysis reports.
+**IMPORTANT**: These estimates assume typical test output sizes. Large test suites, verbose logs, or complex codebases can significantly increase token usage and costs.
+
+The action shows actual costs (when available) in console output and detailed breakdowns in analysis reports. **Always monitor your Anthropic API usage dashboard for real spending.**
 
 ## Troubleshooting
 
