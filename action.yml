@@ -133,18 +133,13 @@ runs:
         echo "$TOOLS" >> $GITHUB_ENV
         echo "EOF" >> $GITHUB_ENV
 
-    - name: Artemis analyzes the situation
-      id: watchdog-analysis
-      uses: anthropics/claude-code-base-action@beta
-      continue-on-error: true  # Don't let Claude errors break the workflow
-      env:
-        GH_TOKEN: ${{ github.token }}
-      with:
-        anthropic_api_key: ${{ inputs.anthropic_api_key }}
-        timeout_minutes: 15
-        max_turns: 15
-        allowed_tools: ${{ env.ALLOWED_TOOLS }}
-        prompt: |
+    - name: Prepare context for Claude
+      shell: bash
+      run: |
+        echo "📝 Preparing context data for Claude analysis..."
+        
+        # Create the enhanced prompt with actual context data
+        cat > .watchdog/claude-prompt.md << 'PROMPT_EOF'
           # Test Failure Analysis and Remediation
           
           You are analyzing test failures to help development teams focus on real issues vs. noise.
@@ -155,16 +150,56 @@ runs:
           - Rerun tests: ${{ inputs.rerun_tests }}
           - Severity threshold: ${{ inputs.severity_threshold }}
           
-          ## Available Context Data
-          Pre-gathered data is available in these files:
-          - `.watchdog/context-summary.json` - Workflow and run information
-          - `.watchdog/permissions.json` - Available GitHub permissions
-          - `.watchdog/existing-issues.json` - Related open issues  
-          - `.watchdog/existing-prs.json` - Related open PRs
-          - `.watchdog/recent-runs.json` - Recent workflow run history
-          - `.watchdog/recent-commits.json` - Recent commits (potential causes)
-          - `.watchdog/failure-analysis.json` - Failure rate and pattern analysis
-          - `.watchdog/test-files.txt` - Available test output files
+          ## Context Data
+          
+          ### Workflow Information
+        PROMPT_EOF
+        
+        # Append context summary
+        if [ -f ".watchdog/context-summary.json" ]; then
+          echo "```json" >> .watchdog/claude-prompt.md
+          cat .watchdog/context-summary.json >> .watchdog/claude-prompt.md
+          echo "```" >> .watchdog/claude-prompt.md
+        fi
+        
+        # Append failure analysis
+        echo "" >> .watchdog/claude-prompt.md
+        echo "### Failure Pattern Analysis" >> .watchdog/claude-prompt.md
+        if [ -f ".watchdog/failure-analysis.json" ]; then
+          echo "```json" >> .watchdog/claude-prompt.md
+          cat .watchdog/failure-analysis.json >> .watchdog/claude-prompt.md
+          echo "```" >> .watchdog/claude-prompt.md
+        fi
+        
+        # Append existing issues
+        echo "" >> .watchdog/claude-prompt.md
+        echo "### Existing Related Issues" >> .watchdog/claude-prompt.md
+        if [ -f ".watchdog/existing-issues.json" ]; then
+          echo "```json" >> .watchdog/claude-prompt.md
+          cat .watchdog/existing-issues.json >> .watchdog/claude-prompt.md  
+          echo "```" >> .watchdog/claude-prompt.md
+        fi
+        
+        # Append existing PRs
+        echo "" >> .watchdog/claude-prompt.md
+        echo "### Existing Related PRs" >> .watchdog/claude-prompt.md
+        if [ -f ".watchdog/existing-prs.json" ]; then
+          echo "```json" >> .watchdog/claude-prompt.md
+          cat .watchdog/existing-prs.json >> .watchdog/claude-prompt.md
+          echo "```" >> .watchdog/claude-prompt.md
+        fi
+        
+        # Append test files list
+        echo "" >> .watchdog/claude-prompt.md
+        echo "### Available Test Output Files" >> .watchdog/claude-prompt.md
+        if [ -f ".watchdog/test-files.txt" ]; then
+          echo "```" >> .watchdog/claude-prompt.md
+          cat .watchdog/test-files.txt >> .watchdog/claude-prompt.md
+          echo "```" >> .watchdog/claude-prompt.md
+        fi
+        
+        # Add the rest of the prompt
+        cat >> .watchdog/claude-prompt.md << 'PROMPT_EOF'
           
           ## Your Tasks
           
@@ -174,14 +209,14 @@ runs:
              - Look for patterns in the failure messages
           
           2. **Assess Severity Based on Context**
-             - Use failure rate from `.watchdog/failure-analysis.json`
+             - Use failure rate from failure analysis above
              - Chronic (80%+): Upgrade severity by 1-2 levels
              - Frequent (50-79%): Upgrade severity by 1 level  
              - Intermittent (20-49%): Use base severity
              - Isolated (<20%): Consider downgrading unless critical
           
           3. **Manage Issues Intelligently**
-             - Check existing issues to avoid duplicates
+             - Check existing issues above to avoid duplicates
              - Update existing issues rather than creating new ones
              - Use consistent naming: "Watchdog [${{ github.workflow }}]: [description]"
              - Include failure patterns, recommendations, and context
@@ -222,6 +257,22 @@ runs:
           - Use clear, professional communication in issues and PRs
           
           Begin your analysis now.
+        PROMPT_EOF
+        
+        echo "✅ Enhanced prompt prepared with actual context data"
+
+    - name: Artemis analyzes the situation
+      id: watchdog-analysis
+      uses: anthropics/claude-code-base-action@beta
+      continue-on-error: true  # Don't let Claude errors break the workflow
+      env:
+        GH_TOKEN: ${{ github.token }}
+      with:
+        anthropic_api_key: ${{ inputs.anthropic_api_key }}
+        timeout_minutes: 10
+        max_turns: 8
+        allowed_tools: ${{ env.ALLOWED_TOOLS }}
+        prompt_file: .watchdog/claude-prompt.md
 
     - name: Generate final report
       shell: bash
