@@ -19,7 +19,7 @@ cat > .watchdog/final-report.md << EOF
 
 **Workflow:** ${GITHUB_WORKFLOW:-unknown}
 **Run:** [${GITHUB_RUN_ID:-unknown}](${GITHUB_SERVER_URL:-unknown}/${GITHUB_REPOSITORY:-unknown}/actions/runs/${GITHUB_RUN_ID:-unknown})
-**Timestamp:** $(date -Iso-8601)
+**Timestamp:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 ## Analysis Results
 - **Severity:** ${SEVERITY:-unknown}

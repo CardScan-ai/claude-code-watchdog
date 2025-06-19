@@ -23,7 +23,7 @@ if [ -f ".watchdog/permissions.json" ] && grep -q "gh_cli_missing\|gh_auth_missi
   "existing_prs_count": 0,
   "recent_failures": 0,
   "test_files_found": 0,
-  "timestamp": "$(date -Iso-8601)",
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "status": "limited_context"
 }
 EOF
@@ -117,10 +117,12 @@ fi
 
 # Gather recent commits (potential causes)
 echo "📝 Gathering recent commits..."
-gh api repos/$GITHUB_REPOSITORY/commits \
-  --since="$(date -d '7 days ago' -Iso-8601)" \
+if ! gh api repos/$GITHUB_REPOSITORY/commits \
   --jq '.[] | {sha: .sha[0:8], message: .commit.message, author: .commit.author.name, date: .commit.author.date}' \
-  > .watchdog/recent-commits.json
+  > .watchdog/recent-commits.json 2>/dev/null; then
+  echo "⚠️ Could not fetch recent commits - using empty list"
+  echo "[]" > .watchdog/recent-commits.json
+fi
 
 # Find and catalog test output files
 echo "🔍 Finding test output files..."
@@ -148,7 +150,7 @@ cat > .watchdog/context-summary.json << EOF
   "existing_prs_count": $(jq length .watchdog/existing-prs.json),
   "recent_failures": $(jq '[.[] | select(.conclusion == "failure")] | length' .watchdog/recent-runs.json),
   "test_files_found": $(wc -l < .watchdog/test-files.txt | tr -d ' '),
-  "timestamp": "$(date -Iso-8601)"
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
 

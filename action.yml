@@ -60,6 +60,7 @@ runs:
         ${{ github.action_path }}/scripts/validate.sh
       continue-on-error: false  # Only fail on missing API key
       env:
+        GH_TOKEN: ${{ github.token }}
         ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
         CREATE_FIXES: ${{ inputs.create_fixes }}
         GITHUB_REPOSITORY: ${{ github.repository }}
@@ -71,6 +72,7 @@ runs:
         ${{ github.action_path }}/scripts/preflight.sh
       continue-on-error: true  # Don't fail if context gathering has issues
       env:
+        GH_TOKEN: ${{ github.token }}
         GITHUB_WORKFLOW: ${{ github.workflow }}
         GITHUB_REPOSITORY: ${{ github.repository }}
         GITHUB_RUN_ID: ${{ github.run_id }}
@@ -135,8 +137,11 @@ runs:
       id: watchdog-analysis
       uses: anthropics/claude-code-action@beta
       continue-on-error: true  # Don't let Claude errors break the workflow
+      env:
+        GH_TOKEN: ${{ github.token }}
       with:
         anthropic_api_key: ${{ inputs.anthropic_api_key }}
+        github_token: ${{ github.token }}
         direct_prompt: |
           # Test Failure Analysis and Remediation
           
