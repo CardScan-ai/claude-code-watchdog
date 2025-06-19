@@ -2,7 +2,7 @@
 
 > AI-powered test failure analysis and automated remediation for GitHub Actions
 
-![Artemis the Watchdog](./artemis-shark.jpg)
+![Artemis the Watchdog](./artemis-shark.png)
 *Meet Artemis, your CI watchdog*
 
 ## Overview
@@ -101,9 +101,18 @@ jobs:
     
     - name: Notify team on critical failures
       if: failure() && steps.watchdog.outputs.severity == 'critical'
-      run: |
-        curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
-          -d '{"text":"🚨 Critical test failure needs immediate attention!"}'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        channel: '#critical-alerts'
+        title: '🚨 Critical Test Failure'
+        message: |
+          Severity: ${{ steps.watchdog.outputs.severity }}
+          Action: ${{ steps.watchdog.outputs.action_taken }}
+          Issue: #${{ steps.watchdog.outputs.issue_number }}
+        mention: 'channel'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 ```
 
 ### Scheduled API Monitoring
