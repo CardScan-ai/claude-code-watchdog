@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Demo Tests" tests="3" failures="1" errors="0" time="2.5">
+  <testsuite name="Math Operations" tests="2" failures="0" errors="0" time="1.2">
+    <testcase name="should add numbers correctly" time="0.5"/>
+    <testcase name="should multiply numbers correctly" time="0.7"/>
+  </testsuite>
+  <testsuite name="String Operations" tests="1" failures="1" errors="0" time="1.3">
+    <testcase name="should concatenate strings" time="1.3">
+      <failure message="AssertionError: expected 'helloworld' to equal 'hello world'">
+        Expected: "hello world"
+        Received: "helloworld"
+      </failure>
+    </testcase>
+  </testsuite>
+</testsuites>

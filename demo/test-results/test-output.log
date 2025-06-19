@@ -1,0 +1,23 @@
+npm test
+
+> demo@1.0.0 test
+> jest
+
+ FAIL  tests/string-operations.test.js
+  String Operations
+    ✓ should add numbers correctly (5 ms)
+    ✓ should multiply numbers correctly (2 ms)
+    ✗ should concatenate strings (12 ms)
+
+  ● String Operations › should concatenate strings
+
+    AssertionError: expected 'helloworld' to equal 'hello world'
+
+      at Object.<anonymous> (tests/string-operations.test.js:8:23)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 2 passed, 3 total
+Snapshots:   0 total
+Time:        2.5 s
+
+npm ERR! Test failed.  See above for more details.
