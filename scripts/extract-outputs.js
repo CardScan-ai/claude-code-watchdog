@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 console.log('🔧 Extracting outputs from Claude analysis...');
+console.log('🔍 Debug info:', process.env.DEBUG_ALL_OUTPUTS || 'No debug info');
 
 let outputs = {
   severity: '',
@@ -51,6 +52,15 @@ let costData = {
 };
 
 const claudeExecutionFile = process.env.CLAUDE_EXECUTION_FILE;
+console.log(`🔍 Claude execution file path: ${claudeExecutionFile || 'NOT SET'}`);
+
+if (claudeExecutionFile) {
+  console.log(`📁 File exists: ${fs.existsSync(claudeExecutionFile)}`);
+  if (fs.existsSync(claudeExecutionFile)) {
+    console.log(`📊 File size: ${fs.statSync(claudeExecutionFile).size} bytes`);
+  }
+}
+
 if (claudeExecutionFile && fs.existsSync(claudeExecutionFile)) {
   try {
     console.log('📊 Reading cost data from Claude execution file...');

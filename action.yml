@@ -154,6 +154,8 @@ runs:
       env:
         CLAUDE_CONCLUSION: ${{ steps.watchdog.outputs.conclusion }}
         CLAUDE_EXECUTION_FILE: ${{ steps.watchdog.outputs.execution_file }}
+        # Debug - show all available outputs
+        DEBUG_ALL_OUTPUTS: "conclusion=${{ steps.watchdog.outputs.conclusion }} execution_file=${{ steps.watchdog.outputs.execution_file }} status=${{ steps.watchdog.outputs.status }}"
 
     - name: Generate final report
       shell: bash
