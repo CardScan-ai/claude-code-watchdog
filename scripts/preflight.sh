@@ -180,8 +180,9 @@ done < .watchdog/test-files.txt
 
 # Gather test results from specified path
 echo "📊 Gathering test results..."
-rm -rf .watchdog/test-outputs
 mkdir -p .watchdog/test-outputs
+# Clear any existing test result files
+find .watchdog/test-outputs -type f -delete 2>/dev/null || true
 
 if [ -n "${TEST_RESULTS_PATH:-}" ]; then
   echo "🔍 Looking for test results at: $TEST_RESULTS_PATH"
