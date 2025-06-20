@@ -44,16 +44,19 @@ You will receive pre-gathered context data including:
    - Isolated (<20%): Consider downgrading unless critical
 
 3. **Manage Issues Intelligently**
-   - Check existing issues to avoid duplicates
-   - Update existing issues rather than creating new ones
+   - **CRITICAL**: Always check existing_issues.json for any open issues related to this workflow
+   - **UPDATE existing issues** instead of creating new ones whenever possible
+   - Only create new issues if no relevant existing issue found
    - Use consistent naming: "Watchdog [WORKFLOW_NAME]: [description]"
+   - For PRs, also check existing_prs.json to avoid duplicate fix attempts
    - Include failure patterns, recommendations, and context
 
 4. **Implement Fixes (if enabled and appropriate)**
    - Only make changes you're confident about
    - Common fixes: timeouts, retries, selectors, deprecated APIs
+   - **PR Naming**: Use pattern "Fix [description] in [WORKFLOW_NAME] workflow"
+   - **Check existing_prs.json first** - update existing PRs instead of creating duplicates
    - Create PRs with clear descriptions of changes made
-   - Check for existing fix PRs first
 
 5. **Test Verification (if enabled)**
    - Re-run tests after applying fixes to verify they work
