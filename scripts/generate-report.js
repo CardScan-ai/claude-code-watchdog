@@ -172,3 +172,49 @@ if (env.totalCost && env.totalCost !== 'N/A') {
 }
 
 console.log('📋 See full breakdown in analysis report artifact');
+
+// Write rich summary to GitHub Actions step summary
+const githubStepSummary = process.env.GITHUB_STEP_SUMMARY;
+if (githubStepSummary) {
+  const summaryContent = `## 🐕 Claude Code Watchdog Analysis
+
+| Metric | Value |
+|--------|-------|
+| **Severity** | ${env.severity} |
+| **Action Taken** | ${env.actionTaken} |
+| **Issue Number** | ${env.issueNumber || 'N/A'} |
+| **PR Number** | ${env.prNumber || 'N/A'} |
+| **Tests Passing** | ${env.testsPassing} |
+
+### 📊 Statistics
+${failureAnalysis ? `
+| Statistic | Value |
+|-----------|-------|
+| **Total Runs** | ${failureAnalysis.total_runs} |
+| **Failed Runs** | ${failureAnalysis.failed_runs} |
+| **Failure Rate** | ${failureAnalysis.failure_rate_percent}% |
+| **Pattern** | ${failureAnalysis.pattern} |
+` : 'No statistics available'}
+
+### 💰 Cost Breakdown
+| Resource | Usage |
+|----------|-------|
+| **Input Tokens** | ${env.inputTokens} |
+| **Output Tokens** | ${env.outputTokens} |
+| **Total Cost** | ${env.totalCost} |
+| **Turns Used** | ${env.turnsUsed} |
+
+${env.issueNumber ? `🔗 [View Issue #${env.issueNumber}](../../issues/${env.issueNumber})` : ''}
+${env.prNumber ? `🔗 [View PR #${env.prNumber}](../../pull/${env.prNumber})` : ''}
+
+---
+*🤖 Automated analysis by Claude Code Watchdog*
+`;
+
+  try {
+    fs.appendFileSync(githubStepSummary, summaryContent);
+    console.log('✅ Rich summary added to GitHub Actions step summary');
+  } catch (error) {
+    console.warn('⚠️ Could not write step summary:', error.message);
+  }
+}
