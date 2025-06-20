@@ -11,9 +11,11 @@ jobs:
   flaky-demo-test:
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # For creating fix PRs
+      contents: write      # For creating fix PRs and reading repo
       issues: write        # For creating issues
       pull-requests: write # For creating PRs
+      actions: read        # For reading workflow runs
+      metadata: read       # For reading repository metadata
     
     steps:
     - name: Checkout
@@ -39,12 +41,11 @@ jobs:
       uses: ./  # Use the local action
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-        test_results_path: 'demo/test-results/*'
+        test_results_path: 'demo/test-results/*' # Include all test results
         create_fixes: 'true'
         rerun_tests: 'false'  # Don't rerun for demo
         severity_threshold: 'low'
         debug_mode: 'true'
-        safe_mode: 'true'  # Enable safe mode for demo
     
     - name: Demo results summary
       if: always()

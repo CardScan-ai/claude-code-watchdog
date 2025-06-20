@@ -130,7 +130,7 @@ runs:
         GITHUB_WORKFLOW: ${{ github.workflow }}
 
     - name: Artemis analyzes the situation
-      id: watchdog-analysis
+      id: watchdog
       uses: anthropics/claude-code-base-action@beta
       continue-on-error: true  # Don't let Claude errors break the workflow
       env:
@@ -150,17 +150,17 @@ runs:
         ${{ github.action_path }}/scripts/generate-report.sh
       continue-on-error: true  # Always try to generate a report, even if incomplete
       env:
-        SEVERITY: ${{ steps.watchdog-analysis.outputs.severity }}
-        ACTION_TAKEN: ${{ steps.watchdog-analysis.outputs.action_taken }}
-        ISSUE_NUMBER: ${{ steps.watchdog-analysis.outputs.issue_number }}
-        PR_NUMBER: ${{ steps.watchdog-analysis.outputs.pr_number }}
-        TESTS_PASSING: ${{ steps.watchdog-analysis.outputs.tests_passing }}
-        INPUT_TOKENS: ${{ steps.watchdog-analysis.outputs.input_tokens }}
-        OUTPUT_TOKENS: ${{ steps.watchdog-analysis.outputs.output_tokens }}
-        CACHE_READ_TOKENS: ${{ steps.watchdog-analysis.outputs.cache_read_tokens }}
-        CACHE_WRITE_TOKENS: ${{ steps.watchdog-analysis.outputs.cache_write_tokens }}
-        TOTAL_COST: ${{ steps.watchdog-analysis.outputs.total_cost }}
-        TURNS_USED: ${{ steps.watchdog-analysis.outputs.turns_used }}
+        SEVERITY: ${{ steps.watchdog.outputs.severity }}
+        ACTION_TAKEN: ${{ steps.watchdog.outputs.action_taken }}
+        ISSUE_NUMBER: ${{ steps.watchdog.outputs.issue_number }}
+        PR_NUMBER: ${{ steps.watchdog.outputs.pr_number }}
+        TESTS_PASSING: ${{ steps.watchdog.outputs.tests_passing }}
+        INPUT_TOKENS: ${{ steps.watchdog.outputs.input_tokens }}
+        OUTPUT_TOKENS: ${{ steps.watchdog.outputs.output_tokens }}
+        CACHE_READ_TOKENS: ${{ steps.watchdog.outputs.cache_read_tokens }}
+        CACHE_WRITE_TOKENS: ${{ steps.watchdog.outputs.cache_write_tokens }}
+        TOTAL_COST: ${{ steps.watchdog.outputs.total_cost }}
+        TURNS_USED: ${{ steps.watchdog.outputs.turns_used }}
         CREATE_FIXES: ${{ inputs.create_fixes }}
         RERUN_TESTS: ${{ inputs.rerun_tests }}
         GITHUB_WORKFLOW: ${{ github.workflow }}
@@ -207,8 +207,8 @@ runs:
         chmod +x ${{ github.action_path }}/scripts/extract-outputs.sh
         ${{ github.action_path }}/scripts/extract-outputs.sh
       env:
-        CLAUDE_CONCLUSION: ${{ steps.watchdog-analysis.outputs.conclusion }}
-        CLAUDE_EXECUTION_FILE: ${{ steps.watchdog-analysis.outputs.execution_file }}
+        CLAUDE_CONCLUSION: ${{ steps.watchdog.outputs.conclusion }}
+        CLAUDE_EXECUTION_FILE: ${{ steps.watchdog.outputs.execution_file }}
 
 branding:
   icon: 'eye'

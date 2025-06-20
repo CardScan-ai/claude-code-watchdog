@@ -87,7 +87,7 @@ fi
 if [ -s .watchdog/workflow-id.txt ]; then
   WORKFLOW_ID=$(cat .watchdog/workflow-id.txt)
   if ! gh api repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_ID/runs \
-    --jq '.workflow_runs[0:20] | .[] | {id, run_number, status, conclusion, created_at, head_sha, head_commit: {message: .head_commit.message, author: .head_commit.author.name}}' \
+    --jq '.workflow_runs[0:20] | map({id, run_number, status, conclusion, created_at, head_sha, head_commit: {message: .head_commit.message, author: .head_commit.author.name}})' \
     > .watchdog/recent-runs.json 2>/dev/null; then
     echo "⚠️ Could not fetch workflow runs - using empty list"
     echo "[]" > .watchdog/recent-runs.json
