@@ -549,14 +549,13 @@ This entire project was developed using Claude Code, demonstrating the power of 
 
 **Development Statistics:**
 ```
-> /cost
-  ⎿  Total cost:            $21.27
-     Total duration (API):  1h 38m 6.7s
-     Total duration (wall): 8h 52m 56.3s
-     Total code changes:    2064 lines added, 696 lines removed
-     Token usage by model:
-         claude-3-5-haiku:  650.1k input, 20.0k output, 0 cache read, 0 cache write
-            claude-sonnet:  1.4k input, 127.6k output, 35.0m cache read, 2.2m cache write
+Total cost:            $21.27
+Total duration (API):  1h 38m 6.7s
+Total duration (wall): 8h 52m 56.3s
+Total code changes:    2064 lines added, 696 lines removed
+Token usage by model:
+    claude-3-5-haiku:  650.1k input, 20.0k output, 0 cache read, 0 cache write
+       claude-sonnet:  1.4k input, 127.6k output, 35.0m cache read, 2.2m cache write
 ```
 
 This represents a complete GitHub Action with:
