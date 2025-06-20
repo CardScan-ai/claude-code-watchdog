@@ -145,6 +145,19 @@ runs:
         system_prompt: ${{ steps.load-system-prompt.outputs.system_prompt }}
         prompt_file: .watchdog/context-data.md
 
+    - name: Save Claude execution data
+      shell: bash
+      if: always()
+      run: |
+        # Copy Claude execution file to .watchdog for analysis and debugging
+        if [ -n "${{ steps.watchdog.outputs.execution_file }}" ] && [ -f "${{ steps.watchdog.outputs.execution_file }}" ]; then
+          echo "📄 Saving Claude execution file to .watchdog/"
+          cp "${{ steps.watchdog.outputs.execution_file }}" .watchdog/claude-execution.json
+          echo "✅ Claude execution data saved"
+        else
+          echo "⚠️ No Claude execution file found"
+        fi
+
     - name: Extract and ensure outputs are set
       id: ensure-outputs
       shell: bash
@@ -153,7 +166,7 @@ runs:
         node ${{ github.action_path }}/scripts/extract-outputs.js
       env:
         CLAUDE_CONCLUSION: ${{ steps.watchdog.outputs.conclusion }}
-        CLAUDE_EXECUTION_FILE: ${{ steps.watchdog.outputs.execution_file }}
+        CLAUDE_EXECUTION_FILE: .watchdog/claude-execution.json
         # Debug - show all available outputs
         DEBUG_ALL_OUTPUTS: "conclusion=${{ steps.watchdog.outputs.conclusion }} execution_file=${{ steps.watchdog.outputs.execution_file }} status=${{ steps.watchdog.outputs.status }}"
 
