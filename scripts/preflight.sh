@@ -107,21 +107,29 @@ if [ -s .watchdog/workflow-id.txt ]; then
   
   # Calculate failure rate with safety checks
   if [ "$TOTAL_RUNS" -gt 0 ] 2>/dev/null; then
-    FAILURE_RATE=$(echo "scale=2; $FAILED_RUNS * 100 / $TOTAL_RUNS" | bc -l 2>/dev/null || echo "0")
+    # Use arithmetic expansion instead of bc for better compatibility
+    FAILURE_RATE=$((FAILED_RUNS * 100 / TOTAL_RUNS))
   else
-    FAILURE_RATE="0"
+    FAILURE_RATE=0
   fi
   
-  # Determine pattern with safety checks
-  if (( $(echo "$FAILURE_RATE > 80" | bc -l 2>/dev/null || echo "0") )); then
+  # Determine pattern with safety checks using arithmetic comparison
+  if [ "$FAILURE_RATE" -gt 80 ] 2>/dev/null; then
     PATTERN="chronic"
-  elif (( $(echo "$FAILURE_RATE > 50" | bc -l 2>/dev/null || echo "0") )); then
+  elif [ "$FAILURE_RATE" -gt 50 ] 2>/dev/null; then
     PATTERN="frequent"
-  elif (( $(echo "$FAILURE_RATE > 20" | bc -l 2>/dev/null || echo "0") )); then
+  elif [ "$FAILURE_RATE" -gt 20 ] 2>/dev/null; then
     PATTERN="intermittent"
   else
     PATTERN="isolated"
   fi
+  
+  # Ensure all variables have valid numeric values
+  TOTAL_RUNS=${TOTAL_RUNS:-0}
+  FAILED_RUNS=${FAILED_RUNS:-0}
+  SUCCESS_RUNS=${SUCCESS_RUNS:-0}
+  FAILURE_RATE=${FAILURE_RATE:-0}
+  PATTERN=${PATTERN:-"unknown"}
   
   cat > .watchdog/failure-analysis.json << EOF
 {
