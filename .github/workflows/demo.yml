@@ -15,7 +15,6 @@ jobs:
       issues: write        # For creating issues
       pull-requests: write # For creating PRs
       actions: read        # For reading workflow runs
-      metadata: read       # For reading repository metadata
     
     steps:
     - name: Checkout
