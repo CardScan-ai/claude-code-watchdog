@@ -145,17 +145,27 @@ runs:
         system_prompt: ${{ steps.load-system-prompt.outputs.system_prompt }}
         prompt_file: .watchdog/context-data.md
 
+    - name: Extract and ensure outputs are set
+      id: ensure-outputs
+      shell: bash
+      if: always()
+      run: |
+        node ${{ github.action_path }}/scripts/extract-outputs.js
+      env:
+        CLAUDE_CONCLUSION: ${{ steps.watchdog.outputs.conclusion }}
+        CLAUDE_EXECUTION_FILE: ${{ steps.watchdog.outputs.execution_file }}
+
     - name: Generate final report
       shell: bash
       run: |
         node ${{ github.action_path }}/scripts/generate-report.js
       continue-on-error: true  # Always try to generate a report, even if incomplete
       env:
-        SEVERITY: ${{ steps.watchdog.outputs.severity }}
-        ACTION_TAKEN: ${{ steps.watchdog.outputs.action_taken }}
-        ISSUE_NUMBER: ${{ steps.watchdog.outputs.issue_number }}
-        PR_NUMBER: ${{ steps.watchdog.outputs.pr_number }}
-        TESTS_PASSING: ${{ steps.watchdog.outputs.tests_passing }}
+        SEVERITY: ${{ steps.ensure-outputs.outputs.severity }}
+        ACTION_TAKEN: ${{ steps.ensure-outputs.outputs.action_taken }}
+        ISSUE_NUMBER: ${{ steps.ensure-outputs.outputs.issue_number }}
+        PR_NUMBER: ${{ steps.ensure-outputs.outputs.pr_number }}
+        TESTS_PASSING: ${{ steps.ensure-outputs.outputs.tests_passing }}
         INPUT_TOKENS: ${{ steps.watchdog.outputs.input_tokens }}
         OUTPUT_TOKENS: ${{ steps.watchdog.outputs.output_tokens }}
         CACHE_READ_TOKENS: ${{ steps.watchdog.outputs.cache_read_tokens }}
@@ -176,7 +186,6 @@ runs:
         name: watchdog-report-${{ github.run_id }}
         path: .watchdog/final-report.md
         retention-days: 30
-
 
     - name: Create debug archive
       if: always() && inputs.debug_mode == 'true'
@@ -199,16 +208,6 @@ runs:
           watchdog-debug-empty.txt
         retention-days: 7
         if-no-files-found: warn
-
-    - name: Extract and ensure outputs are set
-      id: ensure-outputs
-      shell: bash
-      if: always()
-      run: |
-        node ${{ github.action_path }}/scripts/extract-outputs.js
-      env:
-        CLAUDE_CONCLUSION: ${{ steps.watchdog.outputs.conclusion }}
-        CLAUDE_EXECUTION_FILE: ${{ steps.watchdog.outputs.execution_file }}
 
 branding:
   icon: 'eye'
