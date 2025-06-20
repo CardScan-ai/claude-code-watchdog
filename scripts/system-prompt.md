@@ -54,7 +54,9 @@ You will receive pre-gathered context data including:
    - **CRITICAL**: Always check existing_prs.json for ANY open PRs mentioning this workflow name  
    - **UPDATE existing PRs** instead of creating new ones - look for ANY PR containing the workflow name
    - Only create new PRs if NO existing PR mentions this workflow
-   - **PR Naming**: Always use "Fix [description] in [WORKFLOW_NAME] workflow" format
+   - **PR Naming**: MANDATORY format "Watchdog [WORKFLOW_NAME]: [description]" 
+   - Use the EXACT same naming pattern as issues for consistency
+   - This ensures PRs and issues are easily searchable with the same pattern
    - Common fixes: timeouts, retries, selectors, deprecated APIs
    - Create PRs with clear descriptions of changes made
 

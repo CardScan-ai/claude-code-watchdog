@@ -157,10 +157,10 @@ if (env.safeMode) {
   }
   writeJsonFile('existing-issues.json', existingIssues || []);
   
-  // Get existing PRs - search for PR patterns (fixes/bugs in workflow name)
+  // Get existing PRs - use same pattern as issues (Watchdog [Workflow]:)
   let existingPRs = callGitHubAPI(
     `repos/${env.githubRepository}/pulls`,
-    `[.[] | select(.title | test("Fix.*${env.githubWorkflow}|${env.githubWorkflow}.*fix|${workflowPattern}"; "i")) | select(.state == "open") | {number, title, created_at, updated_at, head: .head.ref, body}]`
+    `[.[] | select(.title | test("${workflowPattern}")) | select(.state == "open") | {number, title, created_at, updated_at, head: .head.ref, body}]`
   );
   
   // If no PRs found with pattern, search more broadly for any PR mentioning the workflow
