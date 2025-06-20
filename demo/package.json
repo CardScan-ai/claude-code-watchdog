@@ -4,7 +4,7 @@
   "description": "Flaky Node.js app for testing Claude Code Watchdog",
   "main": "app.js",
   "scripts": {
-    "test": "jest --testResultsProcessor=jest-junit",
+    "test": "jest",
     "test:legacy": "node test.js",
     "start": "node app.js"
   },
