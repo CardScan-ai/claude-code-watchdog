@@ -42,20 +42,18 @@ class FlakyApp {
     return true;
   }
 
-  // Flaky validation: strict but inconsistent
+  // Fixed validation: consistent email validation
   validateEmail(email) {
     if (!email || typeof email !== 'string') {
       throw new Error('Email is required and must be a string');
     }
     
-    // Sometimes case-sensitive, sometimes not
-    const strictMode = Math.random() > 0.5;
-    const emailRegex = strictMode 
-      ? /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/  // lowercase only
-      : /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/; // any case
+    // FIX: Use case-insensitive validation consistently to avoid random failures
+    // Convert to lowercase for validation but preserve original for error messages
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     
     if (!emailRegex.test(email)) {
-      throw new Error(`Invalid email format: ${email} (strict mode: ${strictMode})`);
+      throw new Error(`Invalid email format: ${email}`);
     }
     
     return true;
