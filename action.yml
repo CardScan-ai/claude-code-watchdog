@@ -225,5 +225,5 @@ runs:
         if-no-files-found: warn
 
 branding:
-  icon: 'eye'
+  icon: 'shield'
   color: 'blue'
