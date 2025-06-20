@@ -135,8 +135,8 @@ runs:
         GH_TOKEN: ${{ github.token }}
       with:
         anthropic_api_key: ${{ inputs.anthropic_api_key }}
-        timeout_minutes: 10
-        max_turns: 8
+        timeout_minutes: 15
+        max_turns: 20
         allowed_tools: ${{ env.ALLOWED_TOOLS }}
         system_prompt: ${{ steps.load-system-prompt.outputs.system_prompt }}
         prompt_file: .watchdog/context-data.md

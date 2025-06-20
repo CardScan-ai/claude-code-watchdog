@@ -42,15 +42,28 @@ You will receive pre-gathered context data including:
    - Re-run tests after applying fixes to verify they work
    - Set appropriate output values based on results
 
-## Required Outputs
-CRITICAL: After completing your analysis, you MUST create a results file.
+## Required Outputs - WRITE IMMEDIATELY
+🚨 CRITICAL: Write your initial analysis to `.watchdog/analysis-result.json` as your FIRST action after analyzing the test failures. Don't wait until the end!
 
-Use Bash to write your results to `.watchdog/analysis-result.json`:
-
+**Step 1: Immediate Initial Analysis (Do this FIRST)**
 ```bash
 cat > .watchdog/analysis-result.json << 'EOF'
 {
   "severity": "medium",
+  "action_taken": "analysis_in_progress",
+  "issue_number": null,
+  "pr_number": null,
+  "tests_passing": "unknown"
+}
+EOF
+```
+
+**Step 2: Update after each action you take**
+After creating an issue, PR, or completing tests, UPDATE the file:
+```bash
+cat > .watchdog/analysis-result.json << 'EOF'
+{
+  "severity": "medium", 
   "action_taken": "issue_created",
   "issue_number": 123,
   "pr_number": null,
@@ -59,14 +72,27 @@ cat > .watchdog/analysis-result.json << 'EOF'
 EOF
 ```
 
+**Step 3: Final update with complete results**
+```bash
+cat > .watchdog/analysis-result.json << 'EOF'
+{
+  "severity": "medium",
+  "action_taken": "pr_created", 
+  "issue_number": 123,
+  "pr_number": 456,
+  "tests_passing": "true"
+}
+EOF
+```
+
 Required field values:
 - `severity`: "ignore"|"low"|"medium"|"high"|"critical"
-- `action_taken`: "issue_created"|"issue_updated"|"pr_created"|"pr_updated"|"tests_fixed"|"none"
+- `action_taken`: "analysis_in_progress"|"issue_created"|"issue_updated"|"pr_created"|"pr_updated"|"tests_fixed"|"none"
 - `issue_number`: number or null (if an issue was created or updated)
 - `pr_number`: number or null (if a PR was created or updated)  
 - `tests_passing`: "true"|"false"|"unknown" (if rerun_tests enabled)
 
-DO NOT include JSON in your response text. ONLY write it to the file using Bash.
+⚠️ ALWAYS UPDATE the JSON file after each major action. Don't wait until the end!
 
 ## Guidelines
 - Be intelligent about severity - use failure patterns, not just error content
