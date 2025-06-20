@@ -33,10 +33,15 @@ jobs:
       run: |
         cd demo
         npm install
-        # Simulate test failure by running npm test (which will fail)
-        npm test || echo "Tests failed as expected for demo"
-        # Test results are already available in demo/test-results/ 
-        echo "Demo test completed - failure detected"
+        # Run Jest tests and capture both stdout and stderr
+        mkdir -p test-results
+        npm test 2>&1 | tee test-results/jest-output.log || true
+        # Jest will automatically generate junit.xml in test-results/
+        # Copy any additional Jest output files
+        if [ -f coverage/lcov-report/index.html ]; then
+          cp coverage/lcov-report/index.html test-results/coverage.html
+        fi
+        echo "Demo test completed - analyzing real Jest output"
         exit 1
     
     - name: Force failure for demo (if requested)

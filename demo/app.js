@@ -89,6 +89,28 @@ class FlakyApp {
     // Intentionally not cleaning up
     return leak.length;
   }
+
+  // String operations (with intentional bug)
+  concatenateStrings(str1, str2) {
+    // BUG: Missing space between strings
+    return str1 + str2; // Should be: str1 + ' ' + str2
+  }
+
+  // Math operations
+  addNumbers(a, b) {
+    return a + b;
+  }
+
+  multiplyNumbers(a, b) {
+    return a * b;
+  }
+
+  divideNumbers(a, b) {
+    if (b === 0) {
+      throw new Error('Division by zero');
+    }
+    return a / b;
+  }
 }
 
 module.exports = FlakyApp;

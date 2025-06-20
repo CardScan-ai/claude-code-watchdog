@@ -4,9 +4,24 @@
   "description": "Flaky Node.js app for testing Claude Code Watchdog",
   "main": "app.js",
   "scripts": {
-    "test": "node test.js",
+    "test": "jest --testResultsProcessor=jest-junit",
+    "test:legacy": "node test.js",
     "start": "node app.js"
   },
   "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/__tests__/**/*.js", "**/?(*.)+(spec|test).js"],
+    "reporters": [
+      "default",
+      ["jest-junit", {
+        "outputDirectory": "./test-results",
+        "outputName": "junit.xml"
+      }]
+    ]
+  }
 }
