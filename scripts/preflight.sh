@@ -124,12 +124,21 @@ if [ -s .watchdog/workflow-id.txt ]; then
     PATTERN="isolated"
   fi
   
-  # Ensure all variables have valid numeric values
+  # Ensure all variables have valid numeric values and debug
   TOTAL_RUNS=${TOTAL_RUNS:-0}
-  FAILED_RUNS=${FAILED_RUNS:-0}
+  FAILED_RUNS=${FAILED_RUNS:-0} 
   SUCCESS_RUNS=${SUCCESS_RUNS:-0}
   FAILURE_RATE=${FAILURE_RATE:-0}
   PATTERN=${PATTERN:-"unknown"}
+  
+  # Debug output
+  echo "DEBUG: TOTAL_RUNS='$TOTAL_RUNS' FAILED_RUNS='$FAILED_RUNS' SUCCESS_RUNS='$SUCCESS_RUNS' FAILURE_RATE='$FAILURE_RATE' PATTERN='$PATTERN'"
+  
+  # Validate they are actually numbers
+  case "$TOTAL_RUNS" in ''|*[!0-9]*) TOTAL_RUNS=0 ;; esac
+  case "$FAILED_RUNS" in ''|*[!0-9]*) FAILED_RUNS=0 ;; esac  
+  case "$SUCCESS_RUNS" in ''|*[!0-9]*) SUCCESS_RUNS=0 ;; esac
+  case "$FAILURE_RATE" in ''|*[!0-9]*) FAILURE_RATE=0 ;; esac
   
   cat > .watchdog/failure-analysis.json << EOF
 {
@@ -212,8 +221,8 @@ if [ -n "${TEST_RESULTS_PATH:-}" ]; then
       }
       FOUND_FILES=$((FOUND_FILES + 1))
     elif [ -d "$(dirname "$file_pattern")" ]; then
-      # Try to find files matching the pattern
-      find "$(dirname "$file_pattern")" -name "$(basename "$file_pattern")" -type f 2>/dev/null | while read -r found_file; do
+      # Try to find files matching the pattern, excluding node_modules
+      find "$(dirname "$file_pattern")" -name "$(basename "$file_pattern")" -type f ! -path "*/node_modules/*" 2>/dev/null | while read -r found_file; do
         if [ -f "$found_file" ]; then
           echo "📄 Found test result file: $found_file"
           # Copy with a safe filename (replace / with _)  

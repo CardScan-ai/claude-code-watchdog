@@ -100,12 +100,15 @@ runs:
         Glob
         Grep"
         
+        # Always add Write tool for output file
+        TOOLS="$TOOLS
+        Write"
+        
         # Add file editing tools if fixes enabled
         if [ "${{ inputs.create_fixes }}" == "true" ]; then
           TOOLS="$TOOLS
         Edit
-        MultiEdit
-        Write"
+        MultiEdit"
         fi
         
         echo "ALLOWED_TOOLS<<EOF" >> $GITHUB_ENV
@@ -184,13 +187,40 @@ runs:
         path: .watchdog/final-report.md
         retention-days: 30
 
+    - name: Debug .watchdog contents  
+      if: always() && inputs.debug_mode == 'true'
+      shell: bash
+      run: |
+        echo "🔍 Debugging .watchdog directory contents:"
+        echo "Directory exists: $([ -d .watchdog ] && echo 'YES' || echo 'NO')"
+        if [ -d .watchdog ]; then
+          echo "Contents:"
+          find .watchdog -type f -ls 2>/dev/null || echo "Find failed"
+          ls -la .watchdog/ 2>/dev/null || echo "ls failed"
+          echo "Total files: $(find .watchdog -type f 2>/dev/null | wc -l)"
+        fi
+
+    - name: Create debug archive
+      if: always() && inputs.debug_mode == 'true'
+      shell: bash
+      run: |
+        echo "📦 Creating debug archive..."
+        if [ -d .watchdog ] && [ "$(find .watchdog -type f 2>/dev/null | wc -l)" -gt 0 ]; then
+          tar -czf watchdog-debug.tar.gz .watchdog/
+          echo "✅ Archive created: $(ls -lh watchdog-debug.tar.gz)"
+        else
+          echo "⚠️ No .watchdog files to archive, creating empty marker"
+          echo "No watchdog files generated" > watchdog-debug-empty.txt
+        fi
+
     - name: Upload debug artifacts
       uses: actions/upload-artifact@v4
       if: always() && inputs.debug_mode == 'true'
       with:
         name: watchdog-debug-${{ github.run_id }}
         path: |
-          .watchdog/
+          watchdog-debug.tar.gz
+          watchdog-debug-empty.txt
         retention-days: 7
         if-no-files-found: warn
 

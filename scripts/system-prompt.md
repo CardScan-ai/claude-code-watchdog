@@ -43,16 +43,20 @@ You will receive pre-gathered context data including:
    - Set appropriate output values based on results
 
 ## Required Outputs
-IMPORTANT: You MUST end your analysis with a JSON output block in this exact format:
+CRITICAL: After completing your analysis, you MUST create a results file.
 
-```json
+Use Bash to write your results to `.watchdog/analysis-result.json`:
+
+```bash
+cat > .watchdog/analysis-result.json << 'EOF'
 {
   "severity": "medium",
-  "action_taken": "issue_created", 
+  "action_taken": "issue_created",
   "issue_number": 123,
   "pr_number": null,
   "tests_passing": "unknown"
 }
+EOF
 ```
 
 Required field values:
@@ -61,6 +65,8 @@ Required field values:
 - `issue_number`: number or null (if an issue was created or updated)
 - `pr_number`: number or null (if a PR was created or updated)  
 - `tests_passing`: "true"|"false"|"unknown" (if rerun_tests enabled)
+
+DO NOT include JSON in your response text. ONLY write it to the file using Bash.
 
 ## Guidelines
 - Be intelligent about severity - use failure patterns, not just error content
