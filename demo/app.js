@@ -26,11 +26,15 @@ class FlakyApp {
   async connectDatabase() {
     const connectTime = Math.random() * 200;
     
-    setTimeout(() => {
-      this.database.connected = true;
-    }, connectTime);
+    // Fix: Properly wait for the connection to complete
+    await new Promise(resolve => {
+      setTimeout(() => {
+        this.database.connected = true;
+        resolve();
+      }, connectTime);
+    });
     
-    // Bug: checking connection immediately without waiting
+    // Now safe to check connection status
     if (!this.database.connected) {
       throw new Error('Database connection failed - timing issue');
     }
@@ -92,8 +96,8 @@ class FlakyApp {
 
   // String operations (with intentional bug)
   concatenateStrings(str1, str2) {
-    // BUG: Missing space between strings
-    return str1 + str2; // Should be: str1 + ' ' + str2
+    // FIX: Add space between strings for proper concatenation
+    return str1 + ' ' + str2;
   }
 
   // Math operations
