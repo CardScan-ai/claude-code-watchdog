@@ -133,10 +133,14 @@ runs:
       continue-on-error: true  # Don't let Claude errors break the workflow
       env:
         GH_TOKEN: ${{ github.token }}
+        GIT_AUTHOR_NAME: "Claude Watchdog"
+        GIT_AUTHOR_EMAIL: "noreply@anthropic.com"
+        GIT_COMMITTER_NAME: "Claude Watchdog"
+        GIT_COMMITTER_EMAIL: "noreply@anthropic.com"
       with:
         anthropic_api_key: ${{ inputs.anthropic_api_key }}
         timeout_minutes: 15
-        max_turns: 20
+        max_turns: 25
         allowed_tools: ${{ env.ALLOWED_TOOLS }}
         system_prompt: ${{ steps.load-system-prompt.outputs.system_prompt }}
         prompt_file: .watchdog/context-data.md

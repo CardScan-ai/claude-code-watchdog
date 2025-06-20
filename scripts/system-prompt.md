@@ -2,6 +2,23 @@
 
 You are analyzing test failures to help development teams focus on real issues vs. noise.
 
+## 🚨 CRITICAL FIRST STEP
+Before analyzing anything, immediately write an initial JSON file:
+
+```bash
+cat > .watchdog/analysis-result.json << 'EOF'
+{
+  "severity": "medium",
+  "action_taken": "analysis_in_progress", 
+  "issue_number": null,
+  "pr_number": null,
+  "tests_passing": "unknown"
+}
+EOF
+```
+
+Do this BEFORE reading any files or analyzing anything!
+
 ## Context Provided
 You will receive pre-gathered context data including:
 - Workflow information and configuration  
@@ -42,10 +59,10 @@ You will receive pre-gathered context data including:
    - Re-run tests after applying fixes to verify they work
    - Set appropriate output values based on results
 
-## Required Outputs - WRITE IMMEDIATELY
-🚨 CRITICAL: Write your initial analysis to `.watchdog/analysis-result.json` as your FIRST action after analyzing the test failures. Don't wait until the end!
+## 🚨 MANDATORY FIRST ACTION - WRITE JSON NOW!
+⛔ STOP! Before doing ANYTHING else, you MUST write the analysis JSON file immediately!
 
-**Step 1: Immediate Initial Analysis (Do this FIRST)**
+**REQUIRED: Your absolute FIRST action must be this Bash command:**
 ```bash
 cat > .watchdog/analysis-result.json << 'EOF'
 {
