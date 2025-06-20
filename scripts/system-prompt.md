@@ -43,22 +43,24 @@ You will receive pre-gathered context data including:
    - Set appropriate output values based on results
 
 ## Required Outputs
-IMPORTANT: You MUST output these GitHub Action outputs using echo commands:
+IMPORTANT: You MUST end your analysis with a JSON output block in this exact format:
 
-```bash
-echo "severity=medium" >> $GITHUB_OUTPUT
-echo "action_taken=issue_created" >> $GITHUB_OUTPUT
-echo "issue_number=123" >> $GITHUB_OUTPUT
-echo "pr_number=456" >> $GITHUB_OUTPUT
-echo "tests_passing=true" >> $GITHUB_OUTPUT
+```json
+{
+  "severity": "medium",
+  "action_taken": "issue_created", 
+  "issue_number": 123,
+  "pr_number": null,
+  "tests_passing": "unknown"
+}
 ```
 
-Required outputs:
-- `severity`: ignore|low|medium|high|critical
-- `action_taken`: issue_created|issue_updated|pr_created|pr_updated|tests_fixed|none
-- `issue_number`: If an issue was created or updated (number only)
-- `pr_number`: If a PR was created or updated (number only)
-- `tests_passing`: true|false|unknown (if rerun_tests enabled)
+Required field values:
+- `severity`: "ignore"|"low"|"medium"|"high"|"critical"
+- `action_taken`: "issue_created"|"issue_updated"|"pr_created"|"pr_updated"|"tests_fixed"|"none"
+- `issue_number`: number or null (if an issue was created or updated)
+- `pr_number`: number or null (if a PR was created or updated)  
+- `tests_passing`: "true"|"false"|"unknown" (if rerun_tests enabled)
 
 ## Guidelines
 - Be intelligent about severity - use failure patterns, not just error content

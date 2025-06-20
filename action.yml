@@ -116,9 +116,13 @@ runs:
       id: load-system-prompt
       shell: bash
       run: |
-        echo 'system_prompt<<EOF' >> "$GITHUB_OUTPUT"
-        cat ${{ github.action_path }}/scripts/system-prompt.md >> "$GITHUB_OUTPUT"
-        echo 'EOF' >> "$GITHUB_OUTPUT"
+        # Use printf to properly handle multiline content
+        {
+          echo "system_prompt<<PROMPT_EOF_DELIMITER"
+          cat "${{ github.action_path }}/scripts/system-prompt.md"
+          echo ""
+          echo "PROMPT_EOF_DELIMITER"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Prepare enhanced prompt
       shell: bash
