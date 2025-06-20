@@ -63,8 +63,7 @@ runs:
     - name: Validation checks
       shell: bash
       run: |
-        chmod +x ${{ github.action_path }}/scripts/validate.sh
-        ${{ github.action_path }}/scripts/validate.sh
+        node ${{ github.action_path }}/scripts/validate.js
       continue-on-error: false  # Only fail on missing API key
       env:
         GH_TOKEN: ${{ github.token }}
@@ -75,8 +74,7 @@ runs:
     - name: Gather context data
       shell: bash
       run: |
-        chmod +x ${{ github.action_path }}/scripts/preflight.sh
-        ${{ github.action_path }}/scripts/preflight.sh
+        node ${{ github.action_path }}/scripts/preflight.js
       continue-on-error: true  # Don't fail if context gathering has issues
       env:
         GH_TOKEN: ${{ github.token }}
@@ -146,8 +144,7 @@ runs:
     - name: Generate final report
       shell: bash
       run: |
-        chmod +x ${{ github.action_path }}/scripts/generate-report.sh
-        ${{ github.action_path }}/scripts/generate-report.sh
+        node ${{ github.action_path }}/scripts/generate-report.js
       continue-on-error: true  # Always try to generate a report, even if incomplete
       env:
         SEVERITY: ${{ steps.watchdog.outputs.severity }}
@@ -204,8 +201,7 @@ runs:
       shell: bash
       if: always()
       run: |
-        chmod +x ${{ github.action_path }}/scripts/extract-outputs.sh
-        ${{ github.action_path }}/scripts/extract-outputs.sh
+        node ${{ github.action_path }}/scripts/extract-outputs.js
       env:
         CLAUDE_CONCLUSION: ${{ steps.watchdog.outputs.conclusion }}
         CLAUDE_EXECUTION_FILE: ${{ steps.watchdog.outputs.execution_file }}
