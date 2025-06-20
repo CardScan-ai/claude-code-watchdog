@@ -130,7 +130,7 @@ if (hasLimitedAccess) {
 }
 
 // Build workflow pattern for search
-const workflowPattern = `Watchdog \\\\[${env.githubWorkflow}\\\\]`;
+const workflowPattern = `Watchdog \\[${env.githubWorkflow}\\]`;
 
 // Gather existing issues and PRs (unless in safe mode)
 if (env.safeMode) {
@@ -141,18 +141,36 @@ if (env.safeMode) {
 } else {
   console.log('📋 Gathering existing issues and PRs...');
   
-  // Get existing issues
-  const existingIssues = callGitHubAPI(
+  // Get existing issues - search for both exact pattern and broader "Monthly Demo" pattern
+  let existingIssues = callGitHubAPI(
     `repos/${env.githubRepository}/issues`,
-    `[.[] | select(.title | test("${workflowPattern}")) | select(.state == "open") | {number, title, created_at, updated_at, labels: [.labels[].name], body}]`
+    `[.[] | select(.title | test("${workflowPattern}|${env.githubWorkflow}")) | select(.state == "open") | {number, title, created_at, updated_at, labels: [.labels[].name], body}]`
   );
+  
+  // If no issues found with pattern, search more broadly
+  if (!existingIssues || existingIssues.length === 0) {
+    console.log('🔍 No issues found with workflow pattern, searching more broadly...');
+    existingIssues = callGitHubAPI(
+      `repos/${env.githubRepository}/issues`,
+      `[.[] | select(.title | contains("${env.githubWorkflow}")) | select(.state == "open") | {number, title, created_at, updated_at, labels: [.labels[].name], body}]`
+    );
+  }
   writeJsonFile('existing-issues.json', existingIssues || []);
   
-  // Get existing PRs
-  const existingPRs = callGitHubAPI(
+  // Get existing PRs - use same pattern as issues (Watchdog [Workflow]:)
+  let existingPRs = callGitHubAPI(
     `repos/${env.githubRepository}/pulls`,
     `[.[] | select(.title | test("${workflowPattern}")) | select(.state == "open") | {number, title, created_at, updated_at, head: .head.ref, body}]`
   );
+  
+  // If no PRs found with pattern, search more broadly for any PR mentioning the workflow
+  if (!existingPRs || existingPRs.length === 0) {
+    console.log('🔍 No PRs found with workflow pattern, searching more broadly...');
+    existingPRs = callGitHubAPI(
+      `repos/${env.githubRepository}/pulls`,
+      `[.[] | select(.title | contains("${env.githubWorkflow}")) | select(.state == "open") | {number, title, created_at, updated_at, head: .head.ref, body}]`
+    );
+  }
   writeJsonFile('existing-prs.json', existingPRs || []);
   
   // Get recent commits
