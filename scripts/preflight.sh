@@ -180,6 +180,7 @@ done < .watchdog/test-files.txt
 
 # Gather test results from specified path
 echo "📊 Gathering test results..."
+rm -rf .watchdog/test-outputs
 mkdir -p .watchdog/test-outputs
 
 if [ -n "${TEST_RESULTS_PATH:-}" ]; then
