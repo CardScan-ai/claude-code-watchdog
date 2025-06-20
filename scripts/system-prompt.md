@@ -69,7 +69,8 @@ You will receive pre-gathered context data including:
 
 **REQUIRED: Your absolute FIRST action must be this Bash command:**
 ```bash
-cat > .watchdog/analysis-result.json << 'EOF'
+mkdir -p .watchdog
+cat > .watchdog/analysis-result.json << 'ANALYSIS_EOF'
 {
   "severity": "medium",
   "action_taken": "analysis_in_progress",
@@ -77,13 +78,13 @@ cat > .watchdog/analysis-result.json << 'EOF'
   "pr_number": null,
   "tests_passing": "unknown"
 }
-EOF
+ANALYSIS_EOF
 ```
 
 **Step 2: Update after each action you take**
 After creating an issue, PR, or completing tests, UPDATE the file:
 ```bash
-cat > .watchdog/analysis-result.json << 'EOF'
+cat > .watchdog/analysis-result.json << 'ANALYSIS_EOF'
 {
   "severity": "medium", 
   "action_taken": "issue_created",
@@ -91,12 +92,12 @@ cat > .watchdog/analysis-result.json << 'EOF'
   "pr_number": null,
   "tests_passing": "unknown"
 }
-EOF
+ANALYSIS_EOF
 ```
 
 **Step 3: Final update with complete results**
 ```bash
-cat > .watchdog/analysis-result.json << 'EOF'
+cat > .watchdog/analysis-result.json << 'ANALYSIS_EOF'
 {
   "severity": "medium",
   "action_taken": "pr_created", 
@@ -104,7 +105,7 @@ cat > .watchdog/analysis-result.json << 'EOF'
   "pr_number": 456,
   "tests_passing": "true"
 }
-EOF
+ANALYSIS_EOF
 ```
 
 Required field values:
