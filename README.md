@@ -27,6 +27,7 @@ Add this step to your workflow after your tests:
   uses: cardscan-ai/claude-code-watchdog@v0.2
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+    test_results_path: 'test-results/**/*.xml'  # Adjust to your test output location
 ```
 
 When tests fail, the action will:
@@ -99,6 +100,7 @@ jobs:
       uses: cardscan-ai/claude-code-watchdog@v0.2
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        test_results_path: 'test-results/**/*.xml'
     
     - name: Notify team on critical failures
       if: failure() && steps.watchdog.outputs.severity == 'critical'
@@ -147,6 +149,7 @@ jobs:
       uses: cardscan-ai/claude-code-watchdog@v0.2
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+        test_results_path: 'results.json'  # Newman output file
         create_fixes: 'false'  # Just analysis for API tests
         severity_threshold: 'low'  # Monitor everything
 ```
@@ -160,6 +163,7 @@ Maximum automation - Artemis tries to fix and verify:
   uses: cardscan-ai/claude-code-watchdog@v0.2
   with:
     anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+    test_results_path: 'test-results/**/*.xml'
     create_fixes: 'true'     # Try to implement fixes
     rerun_tests: 'true'      # Verify fixes work
     severity_threshold: 'low' # Handle all failures
@@ -174,11 +178,13 @@ Maximum automation - Artemis tries to fix and verify:
 | Input | Description | Default |
 |-------|-------------|---------|
 | `anthropic_api_key` | Anthropic API key for Claude | Required |
+| `test_results_path` | Path or glob pattern to test result files (e.g., "test-results/**/*.xml", "cypress/reports/*.json") | Required |
 | `severity_threshold` | Minimum severity to process (ignore/low/medium/high/critical) | `medium` |
 | `create_issues` | Create GitHub issues for failures | `true` |
 | `create_fixes` | Attempt to implement fixes automatically | `true` |
 | `rerun_tests` | Re-run tests to verify fixes work | `false` |
 | `debug_mode` | Upload debugging artifacts and detailed logs | `false` |
+| `safe_mode` | Skip potentially risky external content (GitHub issues, PRs, commit messages) | `false` |
 
 ## Outputs
 
