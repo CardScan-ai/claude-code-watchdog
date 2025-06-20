@@ -166,12 +166,12 @@ runs:
         ISSUE_NUMBER: ${{ steps.ensure-outputs.outputs.issue_number }}
         PR_NUMBER: ${{ steps.ensure-outputs.outputs.pr_number }}
         TESTS_PASSING: ${{ steps.ensure-outputs.outputs.tests_passing }}
-        INPUT_TOKENS: ${{ steps.watchdog.outputs.input_tokens }}
-        OUTPUT_TOKENS: ${{ steps.watchdog.outputs.output_tokens }}
-        CACHE_READ_TOKENS: ${{ steps.watchdog.outputs.cache_read_tokens }}
-        CACHE_WRITE_TOKENS: ${{ steps.watchdog.outputs.cache_write_tokens }}
-        TOTAL_COST: ${{ steps.watchdog.outputs.total_cost }}
-        TURNS_USED: ${{ steps.watchdog.outputs.turns_used }}
+        INPUT_TOKENS: ${{ steps.ensure-outputs.outputs.input_tokens }}
+        OUTPUT_TOKENS: ${{ steps.ensure-outputs.outputs.output_tokens }}
+        CACHE_READ_TOKENS: ''
+        CACHE_WRITE_TOKENS: ''
+        TOTAL_COST: ${{ steps.ensure-outputs.outputs.total_cost }}
+        TURNS_USED: ${{ steps.ensure-outputs.outputs.turns_used }}
         CREATE_FIXES: ${{ inputs.create_fixes }}
         RERUN_TESTS: ${{ inputs.rerun_tests }}
         GITHUB_WORKFLOW: ${{ github.workflow }}

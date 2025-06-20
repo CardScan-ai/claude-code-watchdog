@@ -42,6 +42,38 @@ if (fs.existsSync(resultFile)) {
   console.log('⚠️ No analysis result file found');
 }
 
+// Try to extract cost data from Claude execution file
+let costData = {
+  input_tokens: '',
+  output_tokens: '', 
+  total_cost: '',
+  turns_used: ''
+};
+
+const claudeExecutionFile = process.env.CLAUDE_EXECUTION_FILE;
+if (claudeExecutionFile && fs.existsSync(claudeExecutionFile)) {
+  try {
+    console.log('📊 Reading cost data from Claude execution file...');
+    const executionContent = fs.readFileSync(claudeExecutionFile, 'utf8');
+    const executionData = JSON.parse(executionContent);
+    
+    if (executionData.total_cost_usd) {
+      costData.total_cost = `$${executionData.total_cost_usd.toFixed(4)}`;
+    }
+    if (executionData.usage) {
+      costData.input_tokens = String(executionData.usage.input_tokens || '');
+      costData.output_tokens = String(executionData.usage.output_tokens || '');
+    }
+    if (executionData.num_turns) {
+      costData.turns_used = String(executionData.num_turns);
+    }
+    
+    console.log('✅ Successfully extracted cost data');
+  } catch (error) {
+    console.warn('⚠️ Could not extract cost data:', error.message);
+  }
+}
+
 // Write GitHub Action outputs
 const githubOutput = process.env.GITHUB_OUTPUT;
 if (githubOutput) {
@@ -50,7 +82,11 @@ if (githubOutput) {
     `action_taken=${outputs.action_taken}`,
     `issue_number=${outputs.issue_number}`,
     `pr_number=${outputs.pr_number}`,
-    `tests_passing=${outputs.tests_passing}`
+    `tests_passing=${outputs.tests_passing}`,
+    `input_tokens=${costData.input_tokens}`,
+    `output_tokens=${costData.output_tokens}`,
+    `total_cost=${costData.total_cost}`,
+    `turns_used=${costData.turns_used}`
   ];
   
   try {
