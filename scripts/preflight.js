@@ -129,8 +129,8 @@ if (hasLimitedAccess) {
   process.exit(0);
 }
 
-// Build workflow pattern for search
-const workflowPattern = `Watchdog \\[${env.githubWorkflow}\\]`;
+// Build workflow pattern for search - handle both with and without emoji
+const workflowPattern = `(🐕\\s*)?Watchdog \\[${env.githubWorkflow}\\]`;
 
 // Gather existing issues and PRs (unless in safe mode)
 if (env.safeMode) {

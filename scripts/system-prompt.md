@@ -47,14 +47,14 @@ You will receive pre-gathered context data including:
    - **CRITICAL**: Always check existing_issues.json for ANY open issues mentioning this workflow name
    - **UPDATE existing issues** instead of creating new ones - look for ANY issue containing the workflow name
    - Only create new issues if NO existing issue mentions this workflow
-   - **Issue Naming**: Always use "Watchdog [WORKFLOW_NAME]: [description]" format
+   - **Issue Naming**: Always use "🐕 Watchdog [WORKFLOW_NAME]: [description]" format
    - Include failure patterns, recommendations, and context
 
 4. **Implement Fixes (if enabled and appropriate)**
    - **CRITICAL**: Always check existing_prs.json for ANY open PRs mentioning this workflow name  
    - **UPDATE existing PRs** instead of creating new ones - look for ANY PR containing the workflow name
    - Only create new PRs if NO existing PR mentions this workflow
-   - **PR Naming**: MANDATORY format "Watchdog [WORKFLOW_NAME]: [description]" 
+   - **PR Naming**: MANDATORY format "🐕 Watchdog [WORKFLOW_NAME]: [description]" 
    - Use the EXACT same naming pattern as issues for consistency
    - This ensures PRs and issues are easily searchable with the same pattern
    - Common fixes: timeouts, retries, selectors, deprecated APIs
