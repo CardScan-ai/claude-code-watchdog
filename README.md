@@ -3,6 +3,7 @@
 > AI-powered test failure analysis and automated remediation for GitHub Actions
 
 ![Artemis the Watchdog](./artemis-shark.png)
+
 *Meet Artemis, your CI watchdog*
 
 ## Overview
