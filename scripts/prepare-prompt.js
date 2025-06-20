@@ -130,9 +130,13 @@ const testOutputsDir = path.join(watchdogDir, 'test-outputs');
 try {
   if (fs.existsSync(testOutputsDir) && fs.statSync(testOutputsDir).isDirectory()) {
     const outputFiles = fs.readdirSync(testOutputsDir);
+    console.log(`📁 Found ${outputFiles.length} files in test-outputs: ${outputFiles.join(', ')}`);
+    
     if (outputFiles.length > 0) {
       for (const fileName of outputFiles) {
         const filePath = path.join(testOutputsDir, fileName);
+        console.log(`📄 Reading test output content: ${filePath}`);
+        
         if (fs.statSync(filePath).isFile()) {
           const fileContent = readTextFile(filePath);
           if (fileContent) {

@@ -208,32 +208,32 @@ if [ -n "${TEST_RESULTS_PATH:-}" ]; then
   # Support both direct paths and glob patterns
   FOUND_FILES=0
   
-  # Try to expand the glob pattern
-  for file_pattern in $TEST_RESULTS_PATH; do
-    # Use find to handle glob patterns properly
-    if [ -f "$file_pattern" ]; then
-      # Direct file path
-      echo "📄 Found test result file: $file_pattern"
-      # Copy with a safe filename (replace / with _)
-      SAFE_NAME=$(echo "$file_pattern" | sed 's|/|_|g' | sed 's|^_||')
-      cp "$file_pattern" ".watchdog/test-outputs/$SAFE_NAME" 2>/dev/null || {
-        echo "⚠️ Could not copy $file_pattern"
-      }
-      FOUND_FILES=$((FOUND_FILES + 1))
-    elif [ -d "$(dirname "$file_pattern")" ]; then
-      # Try to find files matching the pattern, excluding node_modules
-      find "$(dirname "$file_pattern")" -name "$(basename "$file_pattern")" -type f ! -path "*/node_modules/*" 2>/dev/null | while read -r found_file; do
-        if [ -f "$found_file" ]; then
-          echo "📄 Found test result file: $found_file"
-          # Copy with a safe filename (replace / with _)  
-          SAFE_NAME=$(echo "$found_file" | sed 's|/|_|g' | sed 's|^_||')
-          cp "$found_file" ".watchdog/test-outputs/$SAFE_NAME" 2>/dev/null || {
-            echo "⚠️ Could not copy $found_file"
-          }
-          FOUND_FILES=$((FOUND_FILES + 1))
-        fi
-      done
-    fi
+  # Use a much simpler and safer approach
+  # Just use shell globbing directly but be very specific
+  echo "🔍 Expanding pattern: $TEST_RESULTS_PATH"
+  
+  # Disable globbing temporarily, then re-enable to control expansion
+  set -f
+  IFS=' ' read -ra PATTERNS <<< "$TEST_RESULTS_PATH"
+  set +f
+  
+  for pattern in "${PATTERNS[@]}"; do
+    echo "📋 Processing pattern: $pattern"
+    
+    # Use shell globbing but validate paths
+    for file in $pattern; do
+      # Only process if file exists and is not in node_modules
+      if [ -f "$file" ] && [[ ! "$file" =~ node_modules ]]; then
+        echo "📄 Found test result file: $file"
+        SAFE_NAME=$(echo "$file" | sed 's|/|_|g' | sed 's|^_||')
+        cp "$file" ".watchdog/test-outputs/$SAFE_NAME" 2>/dev/null || {
+          echo "⚠️ Could not copy $file"
+        }
+        FOUND_FILES=$((FOUND_FILES + 1))
+      elif [ -f "$file" ] && [[ "$file" =~ node_modules ]]; then
+        echo "⚠️ Skipping node_modules file: $file"
+      fi
+    done
   done
   
   if [ "$FOUND_FILES" -eq 0 ]; then
@@ -242,6 +242,8 @@ if [ -n "${TEST_RESULTS_PATH:-}" ]; then
     find . -name "*.xml" -o -name "*.json" -o -name "*.log" -o -name "*test*" -o -name "*result*" | head -10 || echo "   No common test files found"
   else
     echo "✅ Found $FOUND_FILES test result files"
+    echo "📁 Files copied to .watchdog/test-outputs/:"
+    ls -la .watchdog/test-outputs/ 2>/dev/null || echo "   Directory not accessible"
   fi
 else
   echo "⚠️ No test results path specified"
