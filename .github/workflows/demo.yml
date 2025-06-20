@@ -41,10 +41,12 @@ jobs:
       with:
         anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
         test_results_path: 'demo/test-results/*' # Include all test results
-        create_fixes: 'true'
+        create_fixes: 'false'
+        create_issues: 'false'
+        safe_mode: 'true'   # public repo.
         rerun_tests: 'false'  # Don't rerun for demo
         severity_threshold: 'low'
-        debug_mode: 'true'
+        debug_mode: 'false'
     
     - name: Demo results summary
       if: always()
