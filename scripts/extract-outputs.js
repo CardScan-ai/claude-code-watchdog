@@ -67,20 +67,38 @@ if (claudeExecutionFile && fs.existsSync(claudeExecutionFile)) {
     const executionContent = fs.readFileSync(claudeExecutionFile, 'utf8');
     const executionData = JSON.parse(executionContent);
     
-    if (executionData.total_cost_usd) {
+    // Debug logging
+    console.log('🔍 Debug - Execution data structure:');
+    console.log(`   - type: ${executionData.type}`);
+    console.log(`   - subtype: ${executionData.subtype}`);
+    console.log(`   - total_cost_usd: ${executionData.total_cost_usd}`);
+    console.log(`   - num_turns: ${executionData.num_turns}`);
+    console.log(`   - usage keys: ${executionData.usage ? Object.keys(executionData.usage).join(', ') : 'none'}`);
+    
+    // Extract cost data with better handling
+    if (executionData.total_cost_usd !== undefined && executionData.total_cost_usd !== null) {
       costData.total_cost = `$${executionData.total_cost_usd.toFixed(4)}`;
+      console.log(`💰 Cost extracted: ${costData.total_cost}`);
+    } else {
+      console.log('⚠️ No total_cost_usd found in execution data');
     }
+    
     if (executionData.usage) {
-      costData.input_tokens = String(executionData.usage.input_tokens || '');
-      costData.output_tokens = String(executionData.usage.output_tokens || '');
+      const usage = executionData.usage;
+      costData.input_tokens = String(usage.input_tokens || '');
+      costData.output_tokens = String(usage.output_tokens || '');
+      console.log(`📊 Token usage: ${costData.input_tokens} input, ${costData.output_tokens} output`);
     }
-    if (executionData.num_turns) {
+    
+    if (executionData.num_turns !== undefined) {
       costData.turns_used = String(executionData.num_turns);
+      console.log(`🔄 Turns used: ${costData.turns_used}`);
     }
     
     console.log('✅ Successfully extracted cost data');
   } catch (error) {
     console.warn('⚠️ Could not extract cost data:', error.message);
+    console.warn('📄 File content preview:', executionContent ? executionContent.substring(0, 200) + '...' : 'empty');
   }
 }
 
