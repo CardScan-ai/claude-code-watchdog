@@ -165,10 +165,10 @@ console.log('');
 
 // Cost summary
 if (env.totalCost && env.totalCost !== 'N/A') {
-  console.log(`💰 Actual cost: ${env.totalCost} USD`);
+  console.log(`💰 Actual cost: ${env.totalCost}`);
   console.log(`📊 Tokens: ${env.inputTokens}in/${env.outputTokens}out`);
 } else {
-  console.log('💰 Estimated cost: ~$0.30-$0.80 USD (varies by complexity)');
+  console.log('💰 Cost data not available');
 }
 
 console.log('📋 See full breakdown in analysis report artifact');
