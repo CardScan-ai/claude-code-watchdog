@@ -102,6 +102,15 @@ runs:
         
         echo "ALLOWED_TOOLS=$TOOLS" >> $GITHUB_ENV
 
+    - name: Calculate dynamic max turns
+      shell: bash
+      run: |
+        node ${{ github.action_path }}/scripts/calculate-max-turns.js
+      env:
+        CREATE_ISSUES: ${{ inputs.create_issues }}
+        CREATE_FIXES: ${{ inputs.create_fixes }}
+        RERUN_TESTS: ${{ inputs.rerun_tests }}
+
     - name: Load system prompt
       id: load-system-prompt
       shell: bash
@@ -140,7 +149,7 @@ runs:
       with:
         anthropic_api_key: ${{ inputs.anthropic_api_key }}
         timeout_minutes: 15
-        max_turns: 25
+        max_turns: ${{ env.DYNAMIC_MAX_TURNS || 25 }}
         allowed_tools: ${{ env.ALLOWED_TOOLS }}
         system_prompt: ${{ steps.load-system-prompt.outputs.system_prompt }}
         prompt_file: .watchdog/context-data.md
