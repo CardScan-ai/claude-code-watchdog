@@ -510,6 +510,28 @@ The action shows actual costs (when available) in console output and detailed br
 4. **Start simple** - Begin with `create_fixes: false` and add features gradually
 5. **Use debug mode** - Enable `debug_mode: true` to see exactly what data Claude analyzed
 
+## Security Best Practices
+
+### SHA Hash Pinning (Recommended for Production)
+
+For maximum security, pin actions to specific commit SHAs instead of using version tags:
+
+```yaml
+# Instead of version tags
+- uses: cardscan-ai/claude-code-watchdog@v0.3.2
+
+# Use SHA hash pinning for production
+- uses: cardscan-ai/claude-code-watchdog@975fd591cfaa7179bfdedb112558dceca966e87e  # v0.3.2
+```
+
+### Why SHA Pinning?
+- **Security**: Prevents malicious code injection if tags are compromised
+- **Immutability**: Ensures exact same code runs every time
+- **Compliance**: Required by many security policies (SLSA, OpenSSF)
+- **Reproducibility**: Guarantees consistent builds across environments
+
+You can find the SHA for any release on the [releases page](https://github.com/cardscan-ai/claude-code-watchdog/releases).
+
 ## Contributing
 
 We love contributions! Here's how to help:
