@@ -26,11 +26,15 @@ class FlakyApp {
   async connectDatabase() {
     const connectTime = Math.random() * 200;
     
-    setTimeout(() => {
-      this.database.connected = true;
-    }, connectTime);
+    // Fix: Properly wait for the connection to complete
+    await new Promise(resolve => {
+      setTimeout(() => {
+        this.database.connected = true;
+        resolve();
+      }, connectTime);
+    });
     
-    // Bug: checking connection immediately without waiting
+    // Now safe to check connection status
     if (!this.database.connected) {
       throw new Error('Database connection failed - timing issue');
     }
@@ -38,20 +42,18 @@ class FlakyApp {
     return true;
   }
 
-  // Flaky validation: strict but inconsistent
+  // Fixed validation: consistent email validation
   validateEmail(email) {
     if (!email || typeof email !== 'string') {
       throw new Error('Email is required and must be a string');
     }
     
-    // Sometimes case-sensitive, sometimes not
-    const strictMode = Math.random() > 0.5;
-    const emailRegex = strictMode 
-      ? /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/  // lowercase only
-      : /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/; // any case
+    // FIX: Use case-insensitive validation consistently to avoid random failures
+    // Convert to lowercase for validation but preserve original for error messages
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     
     if (!emailRegex.test(email)) {
-      throw new Error(`Invalid email format: ${email} (strict mode: ${strictMode})`);
+      throw new Error(`Invalid email format: ${email}`);
     }
     
     return true;
@@ -92,8 +94,8 @@ class FlakyApp {
 
   // String operations (with intentional bug)
   concatenateStrings(str1, str2) {
-    // BUG: Missing space between strings
-    return str1 + str2; // Should be: str1 + ' ' + str2
+    // FIX: Add space between strings for proper concatenation
+    return str1 + ' ' + str2;
   }
 
   // Math operations
